@@ -1,8 +1,21 @@
 #!/bin/bash
-set -euo pipefail
 
 REPO="EzyGang/kaneo-cli"
-BIN_NAME="kaneo-cli"
+BIN_NAME="kaneo"
+
+if [ "${1:-}" = "--uninstall" ]; then
+    for dir in "/usr/local/bin" "${HOME}/.local/bin"; do
+        if [ -f "${dir}/${BIN_NAME}" ]; then
+            rm -f "${dir}/${BIN_NAME}"
+            echo "Removed ${dir}/${BIN_NAME}"
+            exit 0
+        fi
+    done
+    echo "Binary not found" >&2
+    exit 1
+fi
+
+set -euo pipefail
 
 detect_platform() {
     local os arch

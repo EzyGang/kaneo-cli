@@ -2,11 +2,7 @@ use std::env;
 use std::process::{Command, Output};
 
 fn binary_path() -> String {
-    let exe_name = if cfg!(windows) {
-        "kaneo-cli.exe"
-    } else {
-        "kaneo-cli"
-    };
+    let exe_name = if cfg!(windows) { "kaneo.exe" } else { "kaneo" };
     let mut path = env::current_dir().expect("failed to get current dir");
     path.push("target");
     path.push("debug");
@@ -35,7 +31,7 @@ fn run(args: &[&str]) -> Output {
     kaneo_cmd()
         .args(args)
         .output()
-        .expect("failed to execute kaneo-cli")
+        .expect("failed to execute kaneo")
 }
 
 fn assert_success(output: &Output, context: &str) {

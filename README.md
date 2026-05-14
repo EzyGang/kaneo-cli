@@ -1,4 +1,4 @@
-# kaneo-cli
+# kaneo
 
 [![Checks](https://github.com/EzyGang/kaneo-cli/actions/workflows/checks.yml/badge.svg)](https://github.com/EzyGang/kaneo-cli/actions/workflows/checks.yml)
 [![Latest Release](https://img.shields.io/github/v/release/EzyGang/kaneo-cli?color=6366f1)](https://github.com/EzyGang/kaneo-cli/releases/latest)
@@ -16,16 +16,26 @@ A minimalist CLI for [Kaneo](https://kaneo.app) project management. Manage proje
 curl -fsSL https://raw.githubusercontent.com/EzyGang/kaneo-cli/main/install.sh | bash
 ```
 
+**Uninstall**
+```bash
+curl -fsSL https://raw.githubusercontent.com/EzyGang/kaneo-cli/main/install.sh | bash -s -- --uninstall
+```
+
 **Windows (PowerShell)**
 
 ```powershell
 irm https://raw.githubusercontent.com/EzyGang/kaneo-cli/main/install.ps1 | iex
 ```
 
+**Uninstall** (PowerShell)
+```powershell
+Remove-Item "$env:USERPROFILE\.local\bin\kaneo.exe" -Force
+```
+
 ### Cargo (from source)
 
 ```bash
-cargo install --git https://github.com/EzyGang/kaneo-cli kaneo-cli
+cargo install --git https://github.com/EzyGang/kaneo-cli kaneo
 ```
 
 ### Build from source
@@ -41,9 +51,6 @@ cargo build --release
 ```bash
 # Authenticate
 kaneo login <your-api-key> --instance your-instance.example.com
-
-# Check who you are
-kaneo whoami
 
 # Pin your default workspace
 kaneo set <workspace-id>
@@ -82,10 +89,6 @@ Store an API key to authenticate with Kaneo.
 ### `kaneo logout`
 
 Remove stored credentials.
-
-### `kaneo whoami`
-
-Show the currently authenticated user.
 
 ### `kaneo set <workspace-id>`
 
@@ -328,7 +331,7 @@ Write a `SKILL.md` for AI agents (opencode, claude, codex).
 | Arg | Description |
 |-----|-----------|
 | `--agent` | `opencode`, `claude`, or `codex` |
-| `--global` | Install globally instead of current directory |
+| `--scope` | `global` or `local` |
 
 ## Environment variables
 

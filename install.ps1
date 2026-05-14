@@ -1,7 +1,19 @@
 $ErrorActionPreference = "Stop"
 
 $Repo = "EzyGang/kaneo-cli"
-$BinName = "kaneo-cli"
+$BinName = "kaneo"
+
+if ($args[0] -eq "--uninstall") {
+    $InstallDir = Join-Path $env:USERPROFILE ".local\bin"
+    $Binary = Join-Path $InstallDir "$BinName.exe"
+    if (Test-Path $Binary) {
+        Remove-Item -Path $Binary -Force
+        Write-Host "Removed $Binary" -ForegroundColor Green
+        exit 0
+    }
+    Write-Error "Binary not found at $Binary"
+    exit 1
+}
 
 function Get-Platform {
     try {

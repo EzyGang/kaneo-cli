@@ -1,5 +1,3 @@
-use crate::api::client::ApiClient;
-use crate::api::types::SessionResponse;
 use crate::auth::config::GlobalConfig;
 use crate::auth::crypto;
 use crate::cli::LoginArgs;
@@ -27,27 +25,6 @@ pub async fn run_logout() -> anyhow::Result<()> {
     config.workspace_id = None;
     config.project_id = None;
     config.save()?;
-    output::success("Logged out");
-    Ok(())
-}
-
-pub async fn run_whoami(instance: &str, api_key: &str) -> Result<(), crate::errors::KaneoError> {
-    let client = ApiClient::new(instance, api_key).map_err(crate::errors::config_error)?;
-    let session: SessionResponse = client
-        .get("/auth/get-session")
-        .await
-        .map_err(|e| crate::errors::api_error(format!("failed to get session: {e}"), e))?;
-
-    match session.user {
-        Some(user) => {
-            output::success(&format!("Logged in as {}", user.name));
-            eprintln!("  {} {}", output::dim("id:"), user.id);
-            eprintln!("  {} {}", output::dim("email:"), user.email);
-        }
-        None => {
-            output::warn("Not authenticated. Run `kaneo login <api-key>`");
-        }
-    }
-
+    output::success("Logged out. Credentials removed.");
     Ok(())
 }

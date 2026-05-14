@@ -63,7 +63,7 @@ pub async fn run(force: bool, version: Option<String>) -> Result<(), crate::erro
         return Ok(());
     }
 
-    let archive_name = format!("kaneo-cli-{platform}.tar.gz");
+    let archive_name = format!("kaneo-{platform}.tar.gz");
     let asset = release
         .assets
         .iter()
@@ -178,11 +178,7 @@ fn extract_binary_from_tar_gz(data: &[u8]) -> Result<Vec<u8>, crate::errors::Kan
     let gz = flate2::read::GzDecoder::new(data);
     let mut archive = tar::Archive::new(gz);
 
-    let exe_name = if cfg!(windows) {
-        "kaneo-cli.exe"
-    } else {
-        "kaneo-cli"
-    };
+    let exe_name = if cfg!(windows) { "kaneo.exe" } else { "kaneo" };
 
     for entry in archive
         .entries()
@@ -205,7 +201,7 @@ fn extract_binary_from_tar_gz(data: &[u8]) -> Result<Vec<u8>, crate::errors::Kan
 
         let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
 
-        if name == exe_name || name == "kaneo-cli" {
+        if name == exe_name {
             let mut buf = Vec::new();
             std::io::Read::read_to_end(&mut entry, &mut buf).map_err(|e| {
                 crate::errors::KaneoError::Upgrade {

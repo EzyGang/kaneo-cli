@@ -1,4 +1,4 @@
-use crate::cli::InstallSkillAgent;
+use crate::cli::{InstallSkillAgent, InstallSkillScope};
 
 const SKILL_CONTENT: &str = r#"---
 name: kaneo
@@ -15,10 +15,9 @@ description: Skill for the Kaneo CLI — a minimalist, open-source project manag
 
 ```bash
 # Linux/macOS
-curl -fsSL https://raw.githubusercontent.com/kaneo-app/kaneo-cli/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/EzyGang/kaneo-cli/main/install.sh | sh
 
-# Windows (PowerShell)
-irm https://raw.githubusercontent.com/kaneo-app/kaneo-cli/main/install.ps1 | iex
+ irm https://raw.githubusercontent.com/EzyGang/kaneo-cli/main/install.ps1 | iex
 ```
 
 ## Authentication
@@ -59,9 +58,7 @@ Authentication is only through `kaneo login`
 kaneo login <api-key>                    Authenticate with an API key
   [--instance <hostname>]                Instance (default: cloud.kaneo.app)
 
-kaneo logout                             Remove stored credentials
-
-kaneo whoami                             Show current session/user info
+kaneo logout                            Remove stored credentials
 ```
 
 ### Local Context
@@ -227,9 +224,9 @@ kaneo upgrade                             Upgrade to latest version
 ### Agent Skill Installation
 
 ```
-kaneo install-skill                       Install skill for current agent
-  [--agent opencode|claude|codex]
-  [--global]
+kaneo install-skill                     Install skill for agent
+  --agent opencode|claude|codex
+  --scope global|local
 ```
 
 ## Common Patterns for Agents
@@ -240,7 +237,8 @@ kaneo install-skill                       Install skill for current agent
 4. **No interactivity**: All commands are non-interactive, pure I/O
 "#;
 
-pub fn run(agent: InstallSkillAgent, global: bool) -> anyhow::Result<()> {
+pub fn run(agent: InstallSkillAgent, scope: InstallSkillScope) -> anyhow::Result<()> {
+    let global = matches!(scope, InstallSkillScope::Global);
     let target_dir = match (agent, global) {
         (InstallSkillAgent::Opencode, true) | (InstallSkillAgent::Codex, true) => {
             let home = dirs::home_dir().unwrap_or_default();

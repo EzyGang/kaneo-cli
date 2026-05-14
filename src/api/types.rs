@@ -144,22 +144,6 @@ pub struct CommentUser {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SessionUser {
-    pub id: String,
-    pub name: String,
-    pub email: String,
-    #[serde(default)]
-    pub image: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SessionResponse {
-    pub user: Option<SessionUser>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct BoardResponse {
     pub data: BoardData,
 }

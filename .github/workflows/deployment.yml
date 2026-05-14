@@ -50,20 +50,20 @@ jobs:
         shell: bash
         run: |
           if [[ "${{ matrix.platform }}" == "win32-x64" ]]; then
-            BIN="kaneo-cli.exe"
+            BIN="kaneo.exe"
           else
-            BIN="kaneo-cli"
+            BIN="kaneo"
           fi
 
-          ARCHIVE="kaneo-cli-${{ matrix.platform }}.tar.gz"
+          ARCHIVE="kaneo-${{ matrix.platform }}.tar.gz"
           cd "target/${{ matrix.target }}/release"
           tar czf "../../../$ARCHIVE" "$BIN"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
-          name: kaneo-cli-${{ matrix.platform }}
-          path: kaneo-cli-${{ matrix.platform }}.tar.gz
+          name: kaneo-${{ matrix.platform }}
+          path: kaneo-${{ matrix.platform }}.tar.gz
 
   release:
     name: Create Release

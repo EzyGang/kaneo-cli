@@ -53,12 +53,6 @@ async fn run_cli() -> Result<(), KaneoError> {
             cli::login::run_logout().await?;
         }
 
-        Command::Whoami => {
-            let ctx =
-                auth::context::resolve_context(cli.workspace.as_deref(), cli.project.as_deref())?;
-            cli::login::run_whoami(&ctx.instance, &ctx.api_key).await?;
-        }
-
         Command::Set(args) => {
             cli::set_unset::run_set(args.clone())?;
         }
@@ -102,7 +96,7 @@ async fn run_cli() -> Result<(), KaneoError> {
         }
 
         Command::InstallSkill(args) => {
-            install_skill::run(args.agent, args.global)?;
+            install_skill::run(args.agent, args.scope)?;
         }
     }
 

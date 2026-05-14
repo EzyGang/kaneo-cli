@@ -55,9 +55,6 @@ pub enum Command {
     #[command(about = "Remove stored credentials")]
     Logout,
 
-    #[command(about = "Show the currently authenticated user")]
-    Whoami,
-
     #[command(
         name = "set",
         about = "Pin workspace and project in the current directory"
@@ -193,19 +190,15 @@ pub struct UpgradeArgs {
 
 #[derive(Parser, Clone)]
 pub struct InstallSkillArgs {
-    #[arg(
-        long,
-        value_enum,
-        default_value_t = InstallSkillAgent::Opencode,
-        help = "Which agent to install the skill for"
-    )]
+    #[arg(long, value_enum, help = "Which agent to install the skill for")]
     pub agent: InstallSkillAgent,
 
     #[arg(
         long,
-        help = "Install globally (~/.config/...) instead of in the current directory"
+        value_enum,
+        help = "Install globally or in the current directory"
     )]
-    pub global: bool,
+    pub scope: InstallSkillScope,
 }
 
 #[derive(ValueEnum, Clone, Copy, PartialEq, Eq)]
@@ -216,4 +209,12 @@ pub enum InstallSkillAgent {
     Claude,
     #[value(help = "OpenAI Codex CLI (same paths as opencode)")]
     Codex,
+}
+
+#[derive(ValueEnum, Clone, Copy, PartialEq, Eq)]
+pub enum InstallSkillScope {
+    #[value(help = "Install globally (~/.config/...)")]
+    Global,
+    #[value(help = "Install in the current directory")]
+    Local,
 }

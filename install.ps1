@@ -54,7 +54,7 @@ try {
         exit 1
     }
 
-    $InstallDir = Join-Path $env:LOCALAPPDATA "Programs\kaneo-cli"
+    $InstallDir = Join-Path $env:USERPROFILE ".local\bin"
     if (-not (Test-Path $InstallDir)) {
         New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
     }
@@ -66,8 +66,9 @@ try {
     $UserPath = [Environment]::GetEnvironmentVariable("Path", "User")
     if ($UserPath -notlike "*$InstallDir*") {
         [Environment]::SetEnvironmentVariable("Path", "$UserPath;$InstallDir", "User")
+        $env:Path = "$env:Path;$InstallDir"
         Write-Host "Added $InstallDir to user PATH" -ForegroundColor Yellow
-        Write-Host "Restart your terminal for PATH changes to take effect." -ForegroundColor Yellow
+        Write-Host "Restart any open terminals for PATH changes to take effect." -ForegroundColor Yellow
     }
 
     Write-Host ""

@@ -22,10 +22,10 @@ curl -fsSL https://raw.githubusercontent.com/EzyGang/kaneo-cli/main/install.sh |
 irm https://raw.githubusercontent.com/EzyGang/kaneo-cli/main/install.ps1 | iex
 ```
 
-### Cargo
+### Cargo (from source)
 
 ```bash
-cargo install kaneo-cli
+cargo install --git https://github.com/EzyGang/kaneo-cli kaneo-cli
 ```
 
 ### Build from source

@@ -6,7 +6,10 @@ use crate::output;
 pub fn run_set(args: SetArgs, ctx: &context::ResolvedContext) -> anyhow::Result<()> {
     let cwd = std::env::current_dir()?;
     let workspace_id = ctx.workspace_id.clone().or_else(|| {
-        eprintln!("  {} Provide a workspace with `-w <id>` or `kaneo set <workspace-id>`", output::dim("note:"));
+        eprintln!(
+            "  {} Provide a workspace with `-w <id>` or `kaneo set <workspace-id>`",
+            output::dim("note:")
+        );
         None
     });
 

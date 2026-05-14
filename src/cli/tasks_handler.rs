@@ -253,14 +253,17 @@ pub async fn run(
 }
 
 fn print_task_table(slug: &str, tasks: &[&Task]) {
-    println!("Ref        Title                                      Priority  Status");
+    println!("Ref        Title                                      Priority  Status     ID");
     for t in tasks {
         let num = t.number.unwrap_or(0);
         let ref_id = format!("{slug}-{num}");
         let prio = priority_label(&t.priority);
         let status = &t.status;
         let title = &t.title;
-        println!("{:<10} {:<42} {:<9} {}", ref_id, title, prio, status);
+        println!(
+            "{:<10} {:<42} {:<9} {:<10} {}",
+            ref_id, title, prio, status, t.id
+        );
     }
 }
 

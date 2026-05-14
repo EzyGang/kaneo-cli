@@ -125,9 +125,6 @@ pub struct LoginArgs {
 
 #[derive(Parser, Clone)]
 pub struct SetArgs {
-    #[arg(help = "Workspace ID to pin")]
-    pub workspace_id: String,
-
     #[arg(long, help = "Project ID to pin")]
     pub project: Option<String>,
 }

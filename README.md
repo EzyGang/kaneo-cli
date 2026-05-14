@@ -90,13 +90,14 @@ Store an API key to authenticate with Kaneo.
 
 Remove stored credentials.
 
-### `kaneo set <workspace-id>`
+### `kaneo set`
 
-Pin workspace and optionally project in the current directory.
+Pin workspace and optionally project in the current directory. Uses the same `-w`/`-p` flags as every other command.
 
 | Arg | Description |
 |-----|-----------|
-| `--project` | Project ID to pin |
+| `-w`, `--workspace` | Workspace ID to pin |
+| `-p`, `--project` | Project ID to pin |
 
 ### `kaneo unset`
 

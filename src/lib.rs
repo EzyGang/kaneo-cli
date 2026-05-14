@@ -54,7 +54,9 @@ async fn run_cli() -> Result<(), KaneoError> {
         }
 
         Command::Set(args) => {
-            cli::set_unset::run_set(args.clone())?;
+            let ctx =
+                auth::context::resolve_context(cli.workspace.as_deref(), cli.project.as_deref())?;
+            cli::set_unset::run_set(args.clone(), &ctx)?;
         }
 
         Command::Unset(args) => {

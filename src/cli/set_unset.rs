@@ -1,11 +1,22 @@
 use crate::auth::config::LocalConfig;
+use crate::auth::context;
 use crate::cli::{SetArgs, UnsetArgs};
 use crate::output;
 
-pub fn run_set(args: SetArgs) -> anyhow::Result<()> {
+pub fn run_set(args: SetArgs, ctx: &context::ResolvedContext) -> anyhow::Result<()> {
     let cwd = std::env::current_dir()?;
+    let workspace_id = ctx.workspace_id.clone().or_else(|| {
+        eprintln!("  {} Provide a workspace with `-w <id>` or `kaneo set <workspace-id>`", output::dim("note:"));
+        None
+    });
+
+    if workspace_id.is_none() && args.project.is_none() {
+        output::warn("No workspace or project specified. Use `-w <id>` or `--project <id>`.");
+        return Ok(());
+    }
+
     let config = LocalConfig {
-        workspace_id: Some(args.workspace_id),
+        workspace_id,
         project_id: args.project,
     };
     LocalConfig::write_to(&cwd, &config)?;

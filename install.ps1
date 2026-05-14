@@ -4,11 +4,18 @@ $Repo = "EzyGang/kaneo-cli"
 $BinName = "kaneo-cli"
 
 function Get-Platform {
-    $arch = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture
-    switch ($arch) {
-        "X64"  { return "win32-x64" }
-        "Arm64" { Write-Error "Windows ARM64 is not yet supported"; exit 1 }
-        default { Write-Error "Unsupported architecture: $arch"; exit 1 }
+    try {
+        $arch = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture
+        switch ($arch) {
+            "X64"  { return "win32-x64" }
+            "Arm64" { Write-Error "Windows ARM64 is not yet supported"; exit 1 }
+            default { Write-Error "Unsupported architecture: $arch"; exit 1 }
+        }
+    } catch {
+        if ([Environment]::Is64BitOperatingSystem) {
+            return "win32-x64"
+        }
+        Write-Error "Unsupported platform: 32-bit Windows is not supported"; exit 1
     }
 }
 

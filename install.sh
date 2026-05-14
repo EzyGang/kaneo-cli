@@ -30,7 +30,10 @@ detect_platform() {
 }
 
 get_latest_version() {
-    curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" \
+    curl -fsSL \
+        -H "Accept: application/vnd.github+json" \
+        -H "User-Agent: kaneo-installer" \
+        "https://api.github.com/repos/${REPO}/releases/latest" \
         | grep '"tag_name"' \
         | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/'
 }
@@ -55,7 +58,7 @@ main() {
     tmpdir="$(mktemp -d)"
     trap 'rm -rf "$tmpdir"' EXIT
 
-    curl -fsSL "$url" -o "${tmpdir}/${BIN_NAME}.tar.gz"
+    curl -fsSL -H "User-Agent: kaneo-installer" "$url" -o "${tmpdir}/${BIN_NAME}.tar.gz"
     tar -xzf "${tmpdir}/${BIN_NAME}.tar.gz" -C "$tmpdir"
 
     if [ ! -f "${tmpdir}/${BIN_NAME}" ]; then

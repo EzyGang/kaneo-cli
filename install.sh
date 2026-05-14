@@ -69,7 +69,7 @@ main() {
     echo "Downloading ${url}..."
 
     tmpdir="$(mktemp -d)"
-    trap 'rm -rf "$tmpdir"' EXIT
+    trap 'rm -rf ${tmpdir:+"$tmpdir"}' EXIT
 
     curl -fsSL -H "User-Agent: kaneo-installer" "$url" -o "${tmpdir}/${BIN_NAME}.tar.gz"
     tar -xzf "${tmpdir}/${BIN_NAME}.tar.gz" -C "$tmpdir"
@@ -90,6 +90,9 @@ main() {
 
     mv "${tmpdir}/${BIN_NAME}" "${install_dir}/${BIN_NAME}"
     echo "Installed ${BIN_NAME} to ${install_dir}/${BIN_NAME}"
+
+    rm -rf "$tmpdir"
+    trap - EXIT
 
     if ! echo "$PATH" | tr ':' '\n' | grep -qx "$install_dir"; then
         echo ""

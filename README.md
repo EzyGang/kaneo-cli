@@ -98,15 +98,17 @@ Pin workspace and optionally project in the current directory. Uses the same `-w
 |-----|-----------|
 | `-w`, `--workspace` | Workspace ID to pin |
 | `-p`, `--project` | Project ID to pin |
+| `--global` | Write to global config instead of current directory |
 
 ### `kaneo unset`
 
-Remove per-directory pins.
+Remove pinned workspace/project IDs.
 
 | Arg | Description |
 |-----|-----------|
 | `--workspace` | Remove only the workspace pin |
 | `--project` | Remove only the project pin |
+| `--global` | Remove from global config instead of current directory |
 
 ---
 

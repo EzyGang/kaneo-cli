@@ -1,33 +1,56 @@
-use crate::auth::config::LocalConfig;
+use crate::auth::config::{GlobalConfig, LocalConfig};
 use crate::auth::context;
 use crate::cli::{SetArgs, UnsetArgs};
 use crate::output;
 
 pub fn run_set(args: SetArgs, ctx: &context::ResolvedContext) -> anyhow::Result<()> {
-    let cwd = std::env::current_dir()?;
-    let workspace_id = ctx.workspace_id.clone().or_else(|| {
-        eprintln!(
-            "  {} Provide a workspace with `-w <id>` or `kaneo set <workspace-id>`",
-            output::dim("note:")
-        );
-        None
-    });
-
+    let workspace_id = ctx.workspace_id.clone();
     if workspace_id.is_none() && args.project.is_none() {
         output::warn("No workspace or project specified. Use `-w <id>` or `--project <id>`.");
         return Ok(());
     }
 
-    let config = LocalConfig {
-        workspace_id,
-        project_id: args.project,
-    };
-    LocalConfig::write_to(&cwd, &config)?;
-    output::success("Local config written");
+    if args.global {
+        let mut config = GlobalConfig::load()?;
+        if let Some(ws) = workspace_id {
+            config.workspace_id = Some(ws);
+        }
+        if let Some(proj) = args.project {
+            config.project_id = Some(proj);
+        }
+        config.save()?;
+        output::success("Global config updated");
+    } else {
+        let cwd = std::env::current_dir()?;
+        let config = LocalConfig {
+            workspace_id,
+            project_id: args.project,
+        };
+        LocalConfig::write_to(&cwd, &config)?;
+        output::success("Local config written");
+    }
     Ok(())
 }
 
 pub fn run_unset(args: UnsetArgs) -> anyhow::Result<()> {
+    if args.global {
+        let mut config = GlobalConfig::load()?;
+        if !args.workspace && !args.project {
+            config.workspace_id = None;
+            config.project_id = None;
+        } else {
+            if args.workspace {
+                config.workspace_id = None;
+            }
+            if args.project {
+                config.project_id = None;
+            }
+        }
+        config.save()?;
+        output::success("Global config updated");
+        return Ok(());
+    }
+
     let cwd = std::env::current_dir()?;
 
     if !args.workspace && !args.project {

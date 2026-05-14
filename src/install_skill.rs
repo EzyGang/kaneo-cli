@@ -65,10 +65,10 @@ kaneo logout                            Remove stored credentials
 
 ```
 kaneo set -w <workspace-id>            Write local .kaneo-conf.json
-  [-p <project-id>]
+  [-p <project-id>] [--global]
 
-kaneo unset                              Remove local .kaneo-conf.json
-  [--workspace] [--project]              Selectively unset workspace/project
+kaneo unset                              Remove pinned config
+  [--workspace] [--project] [--global]
 ```
 
 ### Projects (`kaneo project` or `kaneo proj`)

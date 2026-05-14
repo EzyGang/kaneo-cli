@@ -127,6 +127,9 @@ pub struct LoginArgs {
 pub struct SetArgs {
     #[arg(long, help = "Project ID to pin")]
     pub project: Option<String>,
+
+    #[arg(long, help = "Write to global config instead of the current directory")]
+    pub global: bool,
 }
 
 #[derive(Parser, Clone)]
@@ -136,6 +139,9 @@ pub struct UnsetArgs {
 
     #[arg(long, help = "Remove only the project pin")]
     pub project: bool,
+
+    #[arg(long, help = "Remove from global config instead of the current directory")]
+    pub global: bool,
 }
 
 #[derive(Parser, Clone)]

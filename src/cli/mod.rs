@@ -140,7 +140,10 @@ pub struct UnsetArgs {
     #[arg(long, help = "Remove only the project pin")]
     pub project: bool,
 
-    #[arg(long, help = "Remove from global config instead of the current directory")]
+    #[arg(
+        long,
+        help = "Remove from global config instead of the current directory"
+    )]
     pub global: bool,
 }
 

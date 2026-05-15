@@ -1,14 +1,11 @@
 use crate::auth::config::GlobalConfig;
-use crate::auth::crypto;
 use crate::cli::LoginArgs;
 use crate::output;
 
 pub async fn run_login(args: LoginArgs) -> anyhow::Result<()> {
     let mut config = GlobalConfig::load()?;
     config.instance = args.instance.clone();
-
-    let encrypted = crypto::encrypt(&args.api_key)?;
-    config.api_key = Some(encrypted);
+    config.api_key = Some(args.api_key);
     config.save()?;
 
     output::success(&format!("Logged in to {}", args.instance));

@@ -45,16 +45,6 @@ impl GlobalConfig {
         let data = serde_json::to_string_pretty(self)?;
         std::fs::write(&path, data).map_err(|e| anyhow::anyhow!("writing {}: {e}", path.display()))
     }
-
-    pub fn decrypted_api_key(&self) -> Result<Option<String>, crate::errors::KaneoError> {
-        match &self.api_key {
-            Some(encrypted) => {
-                let key = crate::auth::crypto::decrypt(encrypted)?;
-                Ok(Some(key))
-            }
-            None => Ok(None),
-        }
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]

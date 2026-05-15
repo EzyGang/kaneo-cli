@@ -52,15 +52,15 @@ cargo build --release
 # Authenticate
 kaneo login <your-api-key> --instance your-instance.example.com
 
-# Pin your default workspace
+# Pin your default workspace globally
 kaneo set <workspace-id>
 ```
 
 ## Configuration
 
-API keys are AES-256-GCM encrypted and stored at `~/.config/.kaneo-conf.json`.
+API keys are stored at `~/.config/.kaneo-conf.json`.
 
-Workspace and project IDs can be persisted per directory in `.kaneo-conf.json`.
+Workspace and project IDs can be persisted per directory in `.kaneo-conf.json` or globally with `--global`.
 
 **Resolution order (highest priority first):**
 

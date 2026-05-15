@@ -43,19 +43,7 @@ pub enum KaneoError {
     },
 
     #[error("{0}")]
-    Crypto(#[from] CryptoError),
-
-    #[error("{0}")]
     Io(#[from] std::io::Error),
-}
-
-#[derive(Error, Debug)]
-pub enum CryptoError {
-    #[error("Failed to encrypt API key")]
-    Encrypt { source: anyhow::Error },
-
-    #[error("Failed to decrypt API key: key may be corrupted")]
-    Decrypt { source: anyhow::Error },
 }
 
 pub fn missing_api_key() -> KaneoError {

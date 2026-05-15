@@ -22,7 +22,8 @@ pub fn resolve_context(
     let api_key = match std::env::var("KANEO_API_KEY") {
         Ok(key) => key,
         Err(_) => global
-            .decrypted_api_key()?
+            .api_key
+            .clone()
             .ok_or_else(crate::errors::missing_api_key)?,
     };
 

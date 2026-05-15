@@ -27,7 +27,6 @@ kaneo login <your-api-key> [--instance <hostname>]
 ```
 
 - Default instance: `cloud.kaneo.app`
-- API key is encrypted locally (AES-256-GCM)
 - Config stored at `~/.config/.kaneo-conf.json`
 
 ## Output Modes

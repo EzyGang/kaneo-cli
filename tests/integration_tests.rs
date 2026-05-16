@@ -70,6 +70,7 @@ fn extract_id(output: &Output, context: &str) -> String {
         "Created task ",
         "Created column '",
         "Created label '",
+        "Created ",
     ] {
         match combined.find(marker) {
             Some(start) => {
@@ -575,6 +576,85 @@ fn search_finds_task() {
 
     // Cleanup
     let _ = run(&["task", "delete", &task_id, "--force"]);
+    let _ = run(&["project", "delete", &project_id, "--force"]);
+}
+
+// ─── Task relation lifecycle ──────────────────────────────────────────────────
+
+#[test]
+#[ignore]
+fn task_relation_lifecycle() {
+    let (_api_key, _instance) = setup().expect("env not set");
+    let ws_id = workspace_id().expect("KANEO_WORKSPACE must be set");
+    let slug = unique_slug("rel-life");
+    let name = unique_name("test-rel-proj");
+
+    let out = run(&[
+        "project",
+        "create",
+        "--name",
+        &name,
+        "--workspace-id",
+        &ws_id,
+        "--slug",
+        &slug,
+    ]);
+    assert_success(&out, "task relation: create project");
+    let project_id = extract_id(&out, "task relation: create project");
+
+    let out = run(&[
+        "task",
+        "create",
+        "--title",
+        "Source Task For Relation",
+        "--project-id",
+        &project_id,
+        "--priority",
+        "medium",
+    ]);
+    assert_success(&out, "task relation: create source task");
+    let source_task_id = extract_id(&out, "task relation: create source task");
+
+    let out = run(&[
+        "task",
+        "create",
+        "--title",
+        "Target Task For Relation",
+        "--project-id",
+        &project_id,
+        "--priority",
+        "low",
+    ]);
+    assert_success(&out, "task relation: create target task");
+    let target_task_id = extract_id(&out, "task relation: create target task");
+
+    let out = run(&[
+        "task",
+        "relation",
+        "create",
+        &source_task_id,
+        &target_task_id,
+        "blocks",
+    ]);
+    assert_success(&out, "task relation create");
+    assert_stderr_contains(&out, "Created blocks relation", "create confirmation");
+
+    let relation_id = extract_id(&out, "task relation create");
+
+    let out = run(&["task", "relation", "list", &source_task_id]);
+    assert_success(&out, "task relation list");
+    assert_stdout_contains(
+        &out,
+        &target_task_id,
+        "task relation list should contain target task ID",
+    );
+
+    let out = run(&["task", "relation", "delete", &relation_id]);
+    assert_success(&out, "task relation delete");
+    assert_stderr_contains(&out, "Deleted blocks relation", "delete confirmation");
+
+    let _ = run(&["task", "delete", &source_task_id, "--force"]);
+    let _ = run(&["task", "delete", &target_task_id, "--force"]);
     let _ = run(&["project", "delete", &project_id, "--force"]);
 }
 

@@ -117,6 +117,12 @@ pub enum TaskCommand {
         #[command(subcommand)]
         command: TaskLabelCommand,
     },
+
+    #[command(name = "relation")]
+    Relation {
+        #[command(subcommand)]
+        command: TaskRelationCommand,
+    },
 }
 
 #[derive(Subcommand, Clone)]
@@ -159,4 +165,19 @@ pub enum TaskLabelCommand {
         task_id: String,
         label_id: String,
     },
+}
+
+#[derive(Subcommand, Clone)]
+pub enum TaskRelationCommand {
+    #[command(visible_alias = "ls")]
+    List { task_id: String },
+
+    Create {
+        source_task_id: String,
+        target_task_id: String,
+        relation_type: String,
+    },
+
+    #[command(visible_alias = "rm")]
+    Delete { id: String },
 }

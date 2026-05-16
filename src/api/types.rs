@@ -177,3 +177,21 @@ pub struct MoveTaskResponse {
     pub source_project_id: String,
     pub destination_project_id: String,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TaskRelation {
+    pub id: String,
+    pub source_task_id: String,
+    pub target_task_id: String,
+    pub relation_type: String,
+    pub created_at: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateTaskRelationBody {
+    pub source_task_id: String,
+    pub target_task_id: String,
+    pub relation_type: String,
+}

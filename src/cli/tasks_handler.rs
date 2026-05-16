@@ -1,7 +1,10 @@
 use crate::api::client::ApiClient;
-use crate::api::types::{BoardResponse, Comment, CreateTaskBody, Label, MoveTaskResponse, Task};
+use crate::api::types::{
+    BoardResponse, Comment, CreateTaskBody, CreateTaskRelationBody, Label, MoveTaskResponse, Task,
+    TaskRelation,
+};
 use crate::auth::context;
-use crate::cli::tasks::{TaskCommand, TaskCommentCommand, TaskLabelCommand};
+use crate::cli::tasks::{TaskCommand, TaskCommentCommand, TaskLabelCommand, TaskRelationCommand};
 use crate::output;
 
 pub async fn run(
@@ -247,6 +250,7 @@ pub async fn run(
 
         TaskCommand::Comment { command } => run_task_comment(command, &client).await?,
         TaskCommand::TaskLabel { command } => run_task_label(command, &client).await?,
+        TaskCommand::Relation { command } => run_task_relation(command, &client).await?,
     }
 
     Ok(())
@@ -380,6 +384,71 @@ async fn run_task_label(
                 .map_err(|e| crate::errors::api_error("failed to detach label".to_owned(), e))?;
 
             output::success("Label detached from task");
+        }
+    }
+
+    Ok(())
+}
+
+async fn run_task_relation(
+    cmd: TaskRelationCommand,
+    client: &ApiClient,
+) -> Result<(), crate::errors::KaneoError> {
+    match cmd {
+        TaskRelationCommand::List { task_id } => {
+            let relations: Vec<TaskRelation> = client
+                .get(&format!("/task-relation/{task_id}"))
+                .await
+                .map_err(|e| {
+                    crate::errors::api_error("failed to list task relations".to_owned(), e)
+                })?;
+
+            if relations.is_empty() {
+                output::warn("No relations found for this task");
+                return Ok(());
+            }
+            for r in &relations {
+                println!(
+                    "{}  {} -> {} ({})",
+                    r.id, r.source_task_id, r.target_task_id, r.relation_type
+                );
+            }
+        }
+
+        TaskRelationCommand::Create {
+            source_task_id,
+            target_task_id,
+            relation_type,
+        } => {
+            let body = CreateTaskRelationBody {
+                source_task_id,
+                target_task_id,
+                relation_type,
+            };
+            let relation: TaskRelation =
+                client.post("/task-relation", &body).await.map_err(|e| {
+                    crate::errors::api_error("failed to create task relation".to_owned(), e)
+                })?;
+
+            output::success(&format!(
+                "Created {} relation between {} and {} ({})",
+                relation.relation_type,
+                relation.source_task_id,
+                relation.target_task_id,
+                relation.id
+            ));
+        }
+
+        TaskRelationCommand::Delete { id } => {
+            let relation: TaskRelation = client
+                .delete(&format!("/task-relation/{id}"))
+                .await
+                .map_err(|e| crate::errors::not_found("Task relation", &id, e))?;
+
+            output::success(&format!(
+                "Deleted {} relation ({})",
+                relation.relation_type, relation.id
+            ));
         }
     }
 

@@ -160,6 +160,17 @@ kaneo task label attach <task-id> <label-id>   Attach label to task
 kaneo task label detach <task-id> <label-id>   Detach label from task
 ```
 
+### Task Relations (`kaneo task relation`)
+
+```
+kaneo task relation [ls] list <task-id>  List relations for a task
+
+kaneo task relation create <source-id> <target-id> <type>  Create a relation
+                                                           Types: subtask, blocks, related
+
+kaneo task relation [rm] delete <id>     Delete a relation
+```
+
 ### Columns (`kaneo column` or `kaneo col`)
 
 ```

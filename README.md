@@ -233,6 +233,14 @@ Requires `--force` to confirm.
 | `attach <task-id> <label-id>` | Attach a label |
 | `detach <task-id> <label-id>` | Detach a label |
 
+#### `task relation`
+
+| Subcommand | Description |
+|------------|-----------|
+| `list <task-id>` | List relations for a task |
+| `create <source> <target> <type>` | Create a relation (types: subtask, blocks, related) |
+| `delete <id>` (alias `rm`) | Delete a relation |
+
 ---
 
 ### `kaneo column` (alias `col`)

@@ -1,4 +1,4 @@
-mod api;
+pub mod api;
 mod auth;
 mod cli;
 mod errors;

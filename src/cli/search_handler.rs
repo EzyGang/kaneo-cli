@@ -35,7 +35,7 @@ pub async fn run(
     let results: serde_json::Value = client
         .get_query("/search", &query)
         .await
-        .map_err(|e| crate::errors::api_error(format!("search failed: {e}"), e))?;
+        .map_err(|e| crate::errors::api_error("Search failed".to_owned(), e))?;
 
     let mut found = false;
 

@@ -17,7 +17,7 @@ pub async fn run(
             let labels: Vec<Label> = client
                 .get(&format!("/label/workspace/{ws}"))
                 .await
-                .map_err(|e| crate::errors::api_error("failed to list labels".to_owned(), e))?;
+                .map_err(|e| crate::errors::api_error("Failed to list labels".to_owned(), e))?;
 
             if labels.is_empty() {
                 output::warn("No labels found");
@@ -57,7 +57,7 @@ pub async fn run(
             let label: Label = client
                 .post("/label", &body)
                 .await
-                .map_err(|e| crate::errors::api_error("failed to create label".to_owned(), e))?;
+                .map_err(|e| crate::errors::api_error("Failed to create label".to_owned(), e))?;
 
             output::success(&format!("Created label '{}' ({})", label.name, label.id));
         }
@@ -74,7 +74,7 @@ pub async fn run(
             let label: Label = client
                 .put(&format!("/label/{id}"), &body)
                 .await
-                .map_err(|e| crate::errors::api_error("failed to update label".to_owned(), e))?;
+                .map_err(|e| crate::errors::api_error("Failed to update label".to_owned(), e))?;
 
             output::success(&format!("Updated label '{}'", label.name));
         }

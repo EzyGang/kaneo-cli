@@ -6,7 +6,7 @@ use crate::output;
 pub fn run_set(args: SetArgs, ctx: &context::ResolvedContext) -> anyhow::Result<()> {
     let workspace_id = ctx.workspace_id.clone();
     if workspace_id.is_none() && args.project.is_none() {
-        output::warn("No workspace or project specified. Use `-w <id>` or `--project <id>`.");
+        output::warn("No workspace or project specified. Use `-w <id>` or `-p <id>`.");
         return Ok(());
     }
 

@@ -17,7 +17,8 @@ description: Skill for the Kaneo CLI — a minimalist, open-source project manag
 # Linux/macOS
 curl -fsSL https://raw.githubusercontent.com/EzyGang/kaneo-cli/main/install.sh | sh
 
- irm https://raw.githubusercontent.com/EzyGang/kaneo-cli/main/install.ps1 | iex
+# Windows (PowerShell)
+irm https://raw.githubusercontent.com/EzyGang/kaneo-cli/main/install.ps1 | iex
 ```
 
 ## Authentication
@@ -218,8 +219,8 @@ kaneo label [rm] delete <id>       Delete a label
 ### Search (`kaneo search`)
 
 ```
-kaneo search <query>                 Search across workspaces
-  [--type all|tasks|projects|comments]
+kaneo search <query>                 Search across tasks, projects, workspaces, and comments
+  [--type all|tasks|projects|workspaces|comments]
   [--project-id <id>]
   [--limit <n>]
 ```

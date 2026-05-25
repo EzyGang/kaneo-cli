@@ -23,7 +23,7 @@ pub async fn run(
             limit,
         } => {
             let pid = context::require_project(project_id.as_deref(), ctx)?;
-            let mut path = format!("/task/tasks/{pid}?limit={}", limit.unwrap_or(20));
+            let mut path = format!("/task/tasks/{pid}?limit={limit}");
             if let Some(s) = &status {
                 path.push_str(&format!("&status={s}"));
             }
@@ -36,7 +36,7 @@ pub async fn run(
             let board: BoardResponse = client
                 .get(&path)
                 .await
-                .map_err(|e| crate::errors::api_error("failed to list tasks".to_owned(), e))?;
+                .map_err(|e| crate::errors::api_error("Failed to list tasks".to_owned(), e))?;
 
             let slug = &board.data.slug;
             let mut tasks: Vec<&Task> = Vec::new();
@@ -70,7 +70,7 @@ pub async fn run(
             );
             println!(
                 "{:<10} {:<9} {:<42} {:<9} {:<10} {:<10} {:<12} {}",
-                num, num, task.title, prio, task.status, assignee, due, task.id
+                "-", num, task.title, prio, task.status, assignee, due, task.id
             );
             if let Some(desc) = &task.description
                 && !desc.is_empty()
@@ -104,7 +104,7 @@ pub async fn run(
             let task: Task = client
                 .post(&format!("/task/{pid}"), &body)
                 .await
-                .map_err(|e| crate::errors::api_error("failed to create task".to_owned(), e))?;
+                .map_err(|e| crate::errors::api_error("Failed to create task".to_owned(), e))?;
 
             let num = task.number.map(|n| format!("#{n}")).unwrap_or_default();
             output::success(&format!(
@@ -160,7 +160,7 @@ pub async fn run(
             let task: Task = client
                 .put(&format!("/task/{id}"), &body)
                 .await
-                .map_err(|e| crate::errors::api_error("failed to update task".to_owned(), e))?;
+                .map_err(|e| crate::errors::api_error("Failed to update task".to_owned(), e))?;
 
             output::success(&format!("Updated task '{}'", task.title));
         }
@@ -223,7 +223,7 @@ pub async fn run(
             let task: Task = client
                 .put(&format!("/task/assignee/{id}"), &body)
                 .await
-                .map_err(|e| crate::errors::api_error("failed to assign task".to_owned(), e))?;
+                .map_err(|e| crate::errors::api_error("Failed to assign task".to_owned(), e))?;
 
             match &task.assignee_name {
                 Some(name) => output::success(&format!("Task '{}' assigned to {name}", task.title)),
@@ -240,7 +240,7 @@ pub async fn run(
             let result: MoveTaskResponse = client
                 .put(&format!("/task/move/{id}"), &MoveBody { project_id })
                 .await
-                .map_err(|e| crate::errors::api_error("failed to move task".to_owned(), e))?;
+                .map_err(|e| crate::errors::api_error("Failed to move task".to_owned(), e))?;
 
             output::success(&format!(
                 "Task '{}' moved to project {}",
@@ -280,7 +280,7 @@ async fn run_task_comment(
             let comments: Vec<Comment> = client
                 .get(&format!("/comment/{task_id}"))
                 .await
-                .map_err(|e| crate::errors::api_error("failed to list comments".to_owned(), e))?;
+                .map_err(|e| crate::errors::api_error("Failed to list comments".to_owned(), e))?;
 
             if comments.is_empty() {
                 output::warn("No comments");
@@ -305,7 +305,7 @@ async fn run_task_comment(
             let _comment: Comment = client
                 .post(&format!("/comment/{task_id}"), &CommentBody { content })
                 .await
-                .map_err(|e| crate::errors::api_error("failed to add comment".to_owned(), e))?;
+                .map_err(|e| crate::errors::api_error("Failed to add comment".to_owned(), e))?;
 
             output::success("Comment added");
         }
@@ -318,7 +318,7 @@ async fn run_task_comment(
             let _comment: Comment = client
                 .put(&format!("/comment/{id}"), &UpdateBody { content })
                 .await
-                .map_err(|e| crate::errors::api_error("failed to update comment".to_owned(), e))?;
+                .map_err(|e| crate::errors::api_error("Failed to update comment".to_owned(), e))?;
 
             output::success("Comment updated");
         }
@@ -346,7 +346,7 @@ async fn run_task_label(
                 .get(&format!("/label/task/{task_id}"))
                 .await
                 .map_err(|e| {
-                    crate::errors::api_error("failed to list task labels".to_owned(), e)
+                    crate::errors::api_error("Failed to list task labels".to_owned(), e)
                 })?;
 
             if labels.is_empty() {
@@ -367,7 +367,7 @@ async fn run_task_label(
             let _result: serde_json::Value = client
                 .put(&format!("/label/{label_id}/task"), &AttachBody { task_id })
                 .await
-                .map_err(|e| crate::errors::api_error("failed to attach label".to_owned(), e))?;
+                .map_err(|e| crate::errors::api_error("Failed to attach label".to_owned(), e))?;
 
             output::success("Label attached to task");
         }
@@ -381,7 +381,7 @@ async fn run_task_label(
             let _result: serde_json::Value = client
                 .delete_json(&format!("/label/{label_id}/task"), &DetachBody { task_id })
                 .await
-                .map_err(|e| crate::errors::api_error("failed to detach label".to_owned(), e))?;
+                .map_err(|e| crate::errors::api_error("Failed to detach label".to_owned(), e))?;
 
             output::success("Label detached from task");
         }
@@ -400,7 +400,7 @@ async fn run_task_relation(
                 .get(&format!("/task-relation/{task_id}"))
                 .await
                 .map_err(|e| {
-                    crate::errors::api_error("failed to list task relations".to_owned(), e)
+                    crate::errors::api_error("Failed to list task relations".to_owned(), e)
                 })?;
 
             if relations.is_empty() {
@@ -427,7 +427,7 @@ async fn run_task_relation(
             };
             let relation: TaskRelation =
                 client.post("/task-relation", &body).await.map_err(|e| {
-                    crate::errors::api_error("failed to create task relation".to_owned(), e)
+                    crate::errors::api_error("Failed to create task relation".to_owned(), e)
                 })?;
 
             output::success(&format!(

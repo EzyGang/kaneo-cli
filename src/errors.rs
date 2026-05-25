@@ -48,22 +48,22 @@ pub enum KaneoError {
 
 pub fn missing_api_key() -> KaneoError {
     KaneoError::MissingApiKey {
-        source: anyhow::anyhow!("no API key found in config or environment"),
+        source: anyhow::anyhow!("No API key found in config or environment"),
         hint: "Run `kaneo login <your-api-key>` to authenticate",
     }
 }
 
 pub fn missing_workspace() -> KaneoError {
     KaneoError::MissingWorkspace {
-        source: anyhow::anyhow!("no workspace ID configured"),
-        hint: "Provide it with `-w <id>`, KANEO_WORKSPACE env var, or `kaneo set <workspace-id>`",
+        source: anyhow::anyhow!("No workspace ID configured"),
+        hint: "Provide it with `-w <id>`, `KANEO_WORKSPACE` env var, or `kaneo set -w <workspace-id>`",
     }
 }
 
 pub fn missing_project() -> KaneoError {
     KaneoError::MissingProject {
-        source: anyhow::anyhow!("no project ID configured"),
-        hint: "Provide it with `-p <id>`, KANEO_PROJECT env var, or `kaneo set <workspace-id> --project <id>`",
+        source: anyhow::anyhow!("No project ID configured"),
+        hint: "Provide it with `-p <id>`, `KANEO_PROJECT` env var, or `kaneo set -w <workspace-id> --project <id>`",
     }
 }
 

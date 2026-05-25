@@ -12,6 +12,7 @@ pub enum ProjectCommand {
     },
 
     Get {
+        #[arg(help = "Project ID")]
         id: String,
     },
 
@@ -33,6 +34,7 @@ pub enum ProjectCommand {
     },
 
     Update {
+        #[arg(help = "Project ID")]
         id: String,
 
         #[arg(long)]
@@ -53,6 +55,7 @@ pub enum ProjectCommand {
 
     #[command(visible_alias = "rm")]
     Delete {
+        #[arg(help = "Project ID")]
         id: String,
 
         #[arg(long)]
@@ -60,10 +63,12 @@ pub enum ProjectCommand {
     },
 
     Archive {
+        #[arg(help = "Project ID")]
         id: String,
     },
 
     Unarchive {
+        #[arg(help = "Project ID")]
         id: String,
     },
 }

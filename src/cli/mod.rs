@@ -75,7 +75,7 @@ pub enum Command {
 
     #[command(
         name = "task",
-        about = "Manage tasks — view board, CRUD, assign, comment, and label"
+        about = "Manage tasks — list, create, update, assign, comment, and label"
     )]
     Task {
         #[command(subcommand)]
@@ -97,7 +97,7 @@ pub enum Command {
         command: LabelCommand,
     },
 
-    #[command(about = "Search across tasks, projects, and comments in your workspace")]
+    #[command(about = "Search across tasks, projects, workspaces, and comments")]
     Search(SearchArgs),
 
     #[command(about = "Download and install the latest version of kaneo")]
@@ -170,6 +170,8 @@ pub enum SearchType {
     Tasks,
     #[value(help = "Only projects")]
     Projects,
+    #[value(help = "Only workspaces")]
+    Workspaces,
     #[value(help = "Only comments")]
     Comments,
 }
@@ -180,6 +182,7 @@ impl SearchType {
             Self::All => "all",
             Self::Tasks => "tasks",
             Self::Projects => "projects",
+            Self::Workspaces => "workspaces",
             Self::Comments => "comments",
         }
     }

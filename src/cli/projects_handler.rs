@@ -24,7 +24,7 @@ pub async fn run(
             let projects: Vec<Project> = client
                 .get(&path)
                 .await
-                .map_err(|e| crate::errors::api_error("failed to list projects".to_owned(), e))?;
+                .map_err(|e| crate::errors::api_error("Failed to list projects".to_owned(), e))?;
 
             if projects.is_empty() {
                 output::warn("No projects found");
@@ -75,7 +75,7 @@ pub async fn run(
             workspace_id,
             slug,
             icon,
-            description: _description,
+            description,
         } => {
             let ws = context::require_workspace(workspace_id.as_deref(), ctx)?;
             let slug_val = slug.unwrap_or_else(|| slug_from_name(&name));
@@ -84,11 +84,12 @@ pub async fn run(
                 workspace_id: ws,
                 slug: slug_val,
                 icon: icon.unwrap_or_default(),
+                description: description.unwrap_or_default(),
             };
             let project: Project = client
                 .post("/project", &body)
                 .await
-                .map_err(|e| crate::errors::api_error("failed to create project".to_owned(), e))?;
+                .map_err(|e| crate::errors::api_error("Failed to create project".to_owned(), e))?;
 
             output::success(&format!(
                 "Created project '{}' ({})",
@@ -119,7 +120,7 @@ pub async fn run(
             let project: Project = client
                 .put(&format!("/project/{id}"), &body)
                 .await
-                .map_err(|e| crate::errors::api_error("failed to update project".to_owned(), e))?;
+                .map_err(|e| crate::errors::api_error("Failed to update project".to_owned(), e))?;
 
             output::success(&format!("Updated project '{}'", project.name));
         }

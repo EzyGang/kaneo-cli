@@ -26,6 +26,7 @@ pub enum ColumnCommand {
     },
 
     Update {
+        #[arg(help = "Column ID")]
         id: String,
 
         #[arg(long)]
@@ -43,6 +44,7 @@ pub enum ColumnCommand {
 
     #[command(visible_alias = "rm")]
     Delete {
+        #[arg(help = "Column ID")]
         id: String,
 
         #[arg(long)]

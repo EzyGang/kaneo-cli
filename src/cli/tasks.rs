@@ -17,10 +17,11 @@ pub enum TaskCommand {
         sort: Option<String>,
 
         #[arg(long, default_value = "20")]
-        limit: Option<u32>,
+        limit: u32,
     },
 
     Get {
+        #[arg(help = "Task ID")]
         id: String,
     },
 
@@ -51,6 +52,7 @@ pub enum TaskCommand {
     },
 
     Update {
+        #[arg(help = "Task ID")]
         id: String,
 
         #[arg(long)]
@@ -77,6 +79,7 @@ pub enum TaskCommand {
 
     #[command(visible_alias = "rm")]
     Delete {
+        #[arg(help = "Task ID")]
         id: String,
 
         #[arg(long)]
@@ -84,16 +87,23 @@ pub enum TaskCommand {
     },
 
     Status {
+        #[arg(help = "Task ID")]
         id: String,
+
+        #[arg(help = "New status")]
         status: String,
     },
 
     Priority {
+        #[arg(help = "Task ID")]
         id: String,
+
+        #[arg(help = "New priority")]
         priority: String,
     },
 
     Assign {
+        #[arg(help = "Task ID")]
         id: String,
 
         #[arg(long)]
@@ -102,7 +112,10 @@ pub enum TaskCommand {
 
     #[command(name = "move")]
     MoveTask {
+        #[arg(help = "Task ID")]
         id: String,
+
+        #[arg(help = "Destination project ID")]
         project_id: String,
     },
 
@@ -129,22 +142,30 @@ pub enum TaskCommand {
 pub enum TaskCommentCommand {
     #[command(visible_alias = "ls")]
     List {
+        #[arg(help = "Task ID")]
         task_id: String,
     },
 
     #[command(name = "add")]
     Add {
+        #[arg(help = "Task ID")]
         task_id: String,
+
+        #[arg(help = "Comment text")]
         content: String,
     },
 
     Update {
+        #[arg(help = "Comment ID")]
         id: String,
+
+        #[arg(help = "Updated comment text")]
         content: String,
     },
 
     #[command(visible_alias = "rm")]
     Delete {
+        #[arg(help = "Comment ID")]
         id: String,
     },
 }
@@ -153,16 +174,23 @@ pub enum TaskCommentCommand {
 pub enum TaskLabelCommand {
     #[command(visible_alias = "ls")]
     List {
+        #[arg(help = "Task ID")]
         task_id: String,
     },
 
     Attach {
+        #[arg(help = "Task ID")]
         task_id: String,
+
+        #[arg(help = "Label ID")]
         label_id: String,
     },
 
     Detach {
+        #[arg(help = "Task ID")]
         task_id: String,
+
+        #[arg(help = "Label ID")]
         label_id: String,
     },
 }
@@ -170,14 +198,25 @@ pub enum TaskLabelCommand {
 #[derive(Subcommand, Clone)]
 pub enum TaskRelationCommand {
     #[command(visible_alias = "ls")]
-    List { task_id: String },
+    List {
+        #[arg(help = "Task ID")]
+        task_id: String,
+    },
 
     Create {
+        #[arg(help = "Source task ID")]
         source_task_id: String,
+
+        #[arg(help = "Target task ID")]
         target_task_id: String,
+
+        #[arg(help = "Relation type (subtask, blocks, related)")]
         relation_type: String,
     },
 
     #[command(visible_alias = "rm")]
-    Delete { id: String },
+    Delete {
+        #[arg(help = "Relation ID")]
+        id: String,
+    },
 }

@@ -84,10 +84,10 @@ fn extract_id(output: &Output, context: &str) -> String {
                     // Try extracting as space-separated token (task numbers like #N)
                     None => rest.split_whitespace().next().map(|s| s.to_owned()),
                 };
-                if let Some(id) = id_part {
-                    if !id.is_empty() {
-                        return id;
-                    }
+                if let Some(id) = id_part
+                    && !id.is_empty()
+                {
+                    return id;
                 }
             }
             None => continue,
@@ -670,12 +670,12 @@ fn uuid_simple() -> String {
 fn extract_column_id_by_name(output: &Output, col_name: &str) -> String {
     let stdout = String::from_utf8_lossy(&output.stdout);
     for line in stdout.lines() {
-        if line.contains(col_name) {
-            if let Some(last_space) = line.rfind("  ") {
-                let id = line[last_space..].trim().to_string();
-                if !id.is_empty() && id.len() >= 20 {
-                    return id;
-                }
+        if line.contains(col_name)
+            && let Some(last_space) = line.rfind("  ")
+        {
+            let id = line[last_space..].trim().to_string();
+            if !id.is_empty() && id.len() >= 20 {
+                return id;
             }
         }
     }

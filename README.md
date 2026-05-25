@@ -53,7 +53,7 @@ cargo build --release
 kaneo login <your-api-key> --instance your-instance.example.com
 
 # Pin your default workspace globally
-kaneo set <workspace-id>
+kaneo set -w <workspace-id>
 ```
 
 ## Configuration
@@ -92,7 +92,7 @@ Remove stored credentials.
 
 ### `kaneo set`
 
-Pin workspace and optionally project in the current directory. Uses the same `-w`/`-p` flags as every other command.
+Pin workspace and optionally project in the current directory. Uses the global `-w`/`--workspace` and `-p`/`--project` flags to determine which IDs to pin.
 
 | Arg | Description |
 |-----|-----------|
@@ -320,7 +320,7 @@ Search across tasks, projects, and comments.
 
 | Arg | Description |
 |-----|-----------|
-| `--type` | `all`, `tasks`, `projects`, or `comments` |
+| `--type` | `all`, `tasks`, `projects`, `workspaces`, or `comments` |
 | `--project-id` | Restrict to a project |
 | `--limit` | Max results (default: `10`) |
 

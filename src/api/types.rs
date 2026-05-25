@@ -22,6 +22,7 @@ pub struct CreateProjectBody {
     pub workspace_id: String,
     pub slug: String,
     pub icon: String,
+    pub description: String,
 }
 
 #[derive(Debug, Serialize)]

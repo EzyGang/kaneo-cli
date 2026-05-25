@@ -17,7 +17,7 @@ pub async fn run(
             let columns: Vec<Column> = client
                 .get(&format!("/column/{pid}"))
                 .await
-                .map_err(|e| crate::errors::api_error("failed to list columns".to_owned(), e))?;
+                .map_err(|e| crate::errors::api_error("Failed to list columns".to_owned(), e))?;
 
             if columns.is_empty() {
                 output::warn("No columns found");
@@ -50,7 +50,7 @@ pub async fn run(
             let col: Column = client
                 .post(&format!("/column/{pid}"), &body)
                 .await
-                .map_err(|e| crate::errors::api_error("failed to create column".to_owned(), e))?;
+                .map_err(|e| crate::errors::api_error("Failed to create column".to_owned(), e))?;
 
             output::success(&format!("Created column '{}' ({})", col.name, col.id));
         }
@@ -83,7 +83,7 @@ pub async fn run(
             let col: Column = client
                 .put(&format!("/column/{id}"), &body)
                 .await
-                .map_err(|e| crate::errors::api_error("failed to update column".to_owned(), e))?;
+                .map_err(|e| crate::errors::api_error("Failed to update column".to_owned(), e))?;
 
             output::success(&format!("Updated column '{}'", col.name));
         }
@@ -130,7 +130,7 @@ pub async fn run(
                     &ReorderBody { columns },
                 )
                 .await
-                .map_err(|e| crate::errors::api_error("failed to reorder columns".to_owned(), e))?;
+                .map_err(|e| crate::errors::api_error("Failed to reorder columns".to_owned(), e))?;
 
             output::success("Columns reordered");
         }

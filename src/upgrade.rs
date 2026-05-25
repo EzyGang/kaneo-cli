@@ -41,7 +41,7 @@ pub async fn run(force: bool, version: Option<String>) -> Result<(), crate::erro
             fetch_release(&tag)
                 .await
                 .map_err(|e| crate::errors::KaneoError::Upgrade {
-                    message: format!("failed to fetch release {tag}: {e}"),
+                    message: format!("Failed to fetch release {tag}: {e}"),
                     source: e,
                 })?
         }
@@ -50,7 +50,7 @@ pub async fn run(force: bool, version: Option<String>) -> Result<(), crate::erro
             fetch_latest_release()
                 .await
                 .map_err(|e| crate::errors::KaneoError::Upgrade {
-                    message: format!("failed to fetch latest release: {e}"),
+                    message: format!("Failed to fetch latest release: {e}"),
                     source: e,
                 })?
         }
@@ -69,14 +69,14 @@ pub async fn run(force: bool, version: Option<String>) -> Result<(), crate::erro
         .iter()
         .find(|a| a.name == archive_name)
         .ok_or_else(|| crate::errors::KaneoError::Upgrade {
-            message: format!("no asset '{archive_name}' in release {}", release.tag_name),
+            message: format!("No asset '{archive_name}' in release {}", release.tag_name),
             source: anyhow::anyhow!("missing asset"),
         })?;
 
     eprintln!("  Downloading v{latest}...");
     let data = download_binary(&asset.download_url).await.map_err(|e| {
         crate::errors::KaneoError::Upgrade {
-            message: format!("download failed: {e}"),
+            message: format!("Download failed: {e}"),
             source: e,
         }
     })?;
@@ -183,19 +183,19 @@ fn extract_binary_from_tar_gz(data: &[u8]) -> Result<Vec<u8>, crate::errors::Kan
     for entry in archive
         .entries()
         .map_err(|e| crate::errors::KaneoError::Upgrade {
-            message: format!("reading archive: {e}"),
+            message: format!("Reading archive: {e}"),
             source: anyhow::anyhow!("{e}"),
         })?
     {
         let mut entry = entry.map_err(|e| crate::errors::KaneoError::Upgrade {
-            message: format!("archive entry error: {e}"),
+            message: format!("Archive entry error: {e}"),
             source: anyhow::anyhow!("{e}"),
         })?;
 
         let path = entry
             .path()
             .map_err(|e| crate::errors::KaneoError::Upgrade {
-                message: format!("reading entry path: {e}"),
+                message: format!("Reading entry path: {e}"),
                 source: anyhow::anyhow!("{e}"),
             })?;
 
@@ -205,7 +205,7 @@ fn extract_binary_from_tar_gz(data: &[u8]) -> Result<Vec<u8>, crate::errors::Kan
             let mut buf = Vec::new();
             std::io::Read::read_to_end(&mut entry, &mut buf).map_err(|e| {
                 crate::errors::KaneoError::Upgrade {
-                    message: format!("reading binary from archive: {e}"),
+                    message: format!("Reading binary from archive: {e}"),
                     source: anyhow::anyhow!("{e}"),
                 }
             })?;
@@ -214,7 +214,7 @@ fn extract_binary_from_tar_gz(data: &[u8]) -> Result<Vec<u8>, crate::errors::Kan
     }
 
     Err(crate::errors::KaneoError::Upgrade {
-        message: format!("binary '{exe_name}' not found in archive"),
+        message: format!("Binary '{exe_name}' not found in archive"),
         source: anyhow::anyhow!("missing binary"),
     })
 }
@@ -222,7 +222,7 @@ fn extract_binary_from_tar_gz(data: &[u8]) -> Result<Vec<u8>, crate::errors::Kan
 #[cfg(windows)]
 fn replace_binary(binary_data: &[u8]) -> Result<(), crate::errors::KaneoError> {
     let current_exe = std::env::current_exe().map_err(|e| crate::errors::KaneoError::Upgrade {
-        message: format!("cannot determine exe path: {e}"),
+        message: format!("Cannot determine exe path: {e}"),
         source: anyhow::anyhow!("{e}"),
     })?;
 
@@ -230,7 +230,7 @@ fn replace_binary(binary_data: &[u8]) -> Result<(), crate::errors::KaneoError> {
     let old_path = current_exe.with_extension("old.exe");
 
     std::fs::write(&new_path, binary_data).map_err(|e| crate::errors::KaneoError::Upgrade {
-        message: format!("writing new binary: {e}"),
+        message: format!("Writing new binary: {e}"),
         source: anyhow::anyhow!("{e}"),
     })?;
 
@@ -239,12 +239,12 @@ fn replace_binary(binary_data: &[u8]) -> Result<(), crate::errors::KaneoError> {
     }
 
     std::fs::rename(&current_exe, &old_path).map_err(|e| crate::errors::KaneoError::Upgrade {
-        message: format!("renaming current exe: {e}"),
+        message: format!("Renaming current exe: {e}"),
         source: anyhow::anyhow!("{e}"),
     })?;
 
     std::fs::rename(&new_path, &current_exe).map_err(|e| crate::errors::KaneoError::Upgrade {
-        message: format!("installing new exe: {e}"),
+        message: format!("Installing new exe: {e}"),
         source: anyhow::anyhow!("{e}"),
     })?;
 
@@ -257,26 +257,26 @@ fn replace_binary(binary_data: &[u8]) -> Result<(), crate::errors::KaneoError> {
     use std::os::unix::fs::PermissionsExt;
 
     let current_exe = std::env::current_exe().map_err(|e| crate::errors::KaneoError::Upgrade {
-        message: format!("cannot determine exe path: {e}"),
+        message: format!("Cannot determine exe path: {e}"),
         source: anyhow::anyhow!("{e}"),
     })?;
 
     let tmp_path = current_exe.with_extension("tmp");
 
     std::fs::write(&tmp_path, binary_data).map_err(|e| crate::errors::KaneoError::Upgrade {
-        message: format!("writing temp binary: {e}"),
+        message: format!("Writing temp binary: {e}"),
         source: anyhow::anyhow!("{e}"),
     })?;
 
     std::fs::set_permissions(&tmp_path, std::fs::Permissions::from_mode(0o755)).map_err(|e| {
         crate::errors::KaneoError::Upgrade {
-            message: format!("setting permissions: {e}"),
+            message: format!("Setting permissions: {e}"),
             source: anyhow::anyhow!("{e}"),
         }
     })?;
 
     std::fs::rename(&tmp_path, &current_exe).map_err(|e| crate::errors::KaneoError::Upgrade {
-        message: format!("replacing binary: {e}"),
+        message: format!("Replacing binary: {e}"),
         source: anyhow::anyhow!("{e}"),
     })?;
 

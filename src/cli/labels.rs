@@ -9,6 +9,7 @@ pub enum LabelCommand {
     },
 
     Get {
+        #[arg(help = "Label ID")]
         id: String,
     },
 
@@ -24,6 +25,7 @@ pub enum LabelCommand {
     },
 
     Update {
+        #[arg(help = "Label ID")]
         id: String,
 
         #[arg(long)]
@@ -35,6 +37,7 @@ pub enum LabelCommand {
 
     #[command(visible_alias = "rm")]
     Delete {
+        #[arg(help = "Label ID")]
         id: String,
 
         #[arg(long)]

@@ -85,6 +85,8 @@ pub struct Column {
     pub project_id: String,
     pub name: String,
     pub position: i64,
+    #[serde(default)]
+    pub status: Option<String>,
     pub icon: Option<String>,
     pub color: Option<String>,
     pub is_final: Option<bool>,
@@ -167,6 +169,8 @@ pub struct BoardData {
 pub struct BoardColumn {
     pub id: String,
     pub name: String,
+    #[serde(default)]
+    pub status: Option<String>,
     pub is_final: Option<bool>,
     pub tasks: Vec<Task>,
 }

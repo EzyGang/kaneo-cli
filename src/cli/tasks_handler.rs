@@ -21,6 +21,7 @@ pub async fn run(
             priority,
             sort,
             limit,
+            include_done,
         } => {
             let pid = context::require_project(project_id.as_deref(), ctx)?;
             let mut path = format!("/task/tasks/{pid}?limit={limit}");
@@ -39,12 +40,28 @@ pub async fn run(
                 .map_err(|e| crate::errors::api_error("Failed to list tasks".to_owned(), e))?;
 
             let slug = &board.data.slug;
+            let final_columns: std::collections::HashSet<&str> = board
+                .data
+                .columns
+                .iter()
+                .filter(|c| c.is_final.unwrap_or(false))
+                .map(|c| c.id.as_str())
+                .collect();
+
             let mut tasks: Vec<&Task> = Vec::new();
             for col in &board.data.columns {
                 tasks.extend(&col.tasks);
             }
             tasks.extend(&board.data.planned_tasks);
             tasks.extend(&board.data.archived_tasks);
+
+            if !include_done {
+                tasks.retain(|t| {
+                    t.column_id
+                        .as_deref()
+                        .is_none_or(|id| !final_columns.contains(id))
+                });
+            }
 
             if tasks.is_empty() {
                 output::warn("No tasks found");

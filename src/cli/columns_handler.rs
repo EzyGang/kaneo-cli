@@ -29,7 +29,8 @@ pub async fn run(
                 } else {
                     ""
                 };
-                println!("{}  {}{fin}", c.name, c.id);
+                let slug = c.status.as_deref().unwrap_or("-");
+                println!("{}  ({})  {}{fin}", c.name, slug, c.id);
             }
         }
 

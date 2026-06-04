@@ -18,6 +18,9 @@ pub enum TaskCommand {
 
         #[arg(long, default_value = "20")]
         limit: u32,
+
+        #[arg(long, help = "Include tasks in final (done) columns")]
+        include_done: bool,
     },
 
     Get {

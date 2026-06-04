@@ -102,7 +102,9 @@ async fn run_cli() -> Result<(), KaneoError> {
         }
     }
 
-    if let Some(version) = upgrade::check_cached_update() {
+    if !matches!(&cli.command, Command::Upgrade(_))
+        && let Some(version) = upgrade::check_cached_update()
+    {
         let dim = console::style(format!(
             "  Update available: v{version}. Run `kaneo upgrade`"
         ))

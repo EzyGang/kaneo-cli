@@ -107,7 +107,9 @@ kaneo task [ls] list                     List tasks
   [--project-id <id>]
   [--status <status>]
   [--priority <priority>]
+  [--sort <field>]
   [--limit <n>]
+  [--include-done]
 
 kaneo task get <id>                      Get task details
 

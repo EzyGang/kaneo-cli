@@ -11,11 +11,14 @@ pub mod search_handler;
 pub mod set_unset;
 pub mod tasks;
 pub mod tasks_handler;
+pub mod workspaces;
+pub mod workspaces_handler;
 
 use columns::ColumnCommand;
 use labels::LabelCommand;
 use projects::ProjectCommand;
 use tasks::TaskCommand;
+use workspaces::WorkspaceCommand;
 
 #[derive(Parser)]
 #[command(
@@ -95,6 +98,15 @@ pub enum Command {
     Label {
         #[command(subcommand)]
         command: LabelCommand,
+    },
+
+    #[command(
+        visible_alias = "ws",
+        about = "List workspaces accessible to your API key"
+    )]
+    Workspace {
+        #[command(subcommand)]
+        command: WorkspaceCommand,
     },
 
     #[command(about = "Search across tasks, projects, workspaces, and comments")]

@@ -87,6 +87,12 @@ async fn run_cli() -> Result<(), KaneoError> {
             cli::labels_handler::run(command.clone(), &ctx).await?;
         }
 
+        Command::Workspace { command } => {
+            let ctx =
+                auth::context::resolve_context(cli.workspace.as_deref(), cli.project.as_deref())?;
+            cli::workspaces_handler::run(command.clone(), &ctx).await?;
+        }
+
         Command::Search(args) => {
             let ctx =
                 auth::context::resolve_context(cli.workspace.as_deref(), cli.project.as_deref())?;

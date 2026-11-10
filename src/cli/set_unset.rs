@@ -1,6 +1,6 @@
 use crate::auth::config::{GlobalConfig, LocalConfig};
 use crate::auth::context;
-use crate::cli::{SetArgs, UnsetArgs};
+use crate::cli::args::{SetArgs, UnsetArgs};
 use crate::output;
 
 pub fn run_set(args: SetArgs, ctx: &context::ResolvedContext) -> anyhow::Result<()> {

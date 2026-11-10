@@ -74,7 +74,10 @@ fn extract_id(output: &Output, context: &str) -> String {
     ] {
         match combined.find(marker) {
             Some(start) => {
-                let rest = &combined[start + marker.len()..];
+                let rest = combined[start + marker.len()..]
+                    .lines()
+                    .next()
+                    .unwrap_or("");
                 let id_part = match rest.rfind(" (") {
                     // New universal format: "Created <entity> 'name' (ID)"
                     Some(paren_start) => {
@@ -838,15 +841,22 @@ fn task_label_attach_detach() {
 
     let out = run(&["task", "label", "attach", &task_id, &label_id]);
     assert_success(&out, "task label attach");
-    assert_stderr_contains(&out, "Label attached", "attach confirmation");
+    assert_stderr_contains(&out, "attached to task", "attach confirmation");
 
     let out = run(&["task", "label", "list", &task_id]);
     assert_success(&out, "task label list after attach");
     assert_stdout_contains(&out, &label_name, "label should be listed on task");
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    let task_label_id = stdout
+        .lines()
+        .find(|line| line.starts_with(label_name.as_str()))
+        .and_then(|line| line.split_whitespace().last())
+        .expect("task label row should end with its ID")
+        .to_owned();
 
-    let out = run(&["task", "label", "detach", &task_id, &label_id]);
+    let out = run(&["task", "label", "detach", &task_label_id]);
     assert_success(&out, "task label detach");
-    assert_stderr_contains(&out, "Label detached", "detach confirmation");
+    assert_stderr_contains(&out, "detached from task", "detach confirmation");
 
     let out = run(&["task", "label", "list", &task_id]);
     assert_success(&out, "task label list after detach");

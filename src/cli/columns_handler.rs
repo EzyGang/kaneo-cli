@@ -1,15 +1,13 @@
-use crate::api::client::ApiClient;
-use crate::api::types::{Column, CreateColumnBody};
-use crate::auth::context;
+use crate::api::types::column::{
+    Column, ColumnPosition, CreateColumnBody, ReorderColumnsBody, UpdateColumnBody,
+};
+use crate::auth::context::{self, ResolvedContext};
 use crate::cli::columns::ColumnCommand;
+use crate::errors::{ApiResultExt, KaneoError};
 use crate::output;
 
-pub async fn run(
-    cmd: ColumnCommand,
-    ctx: &context::ResolvedContext,
-) -> Result<(), crate::errors::KaneoError> {
-    let client =
-        ApiClient::new(&ctx.instance, &ctx.api_key).map_err(crate::errors::config_error)?;
+pub async fn run(cmd: ColumnCommand, ctx: &ResolvedContext) -> Result<(), KaneoError> {
+    let client = ctx.client()?;
 
     match cmd {
         ColumnCommand::List { project_id } => {
@@ -17,21 +15,8 @@ pub async fn run(
             let columns: Vec<Column> = client
                 .get(&format!("/column/{pid}"))
                 .await
-                .map_err(|e| crate::errors::api_error("Failed to list columns".to_owned(), e))?;
-
-            if columns.is_empty() {
-                output::warn("No columns found");
-                return Ok(());
-            }
-            for c in &columns {
-                let fin = if c.is_final.unwrap_or(false) {
-                    " [final]"
-                } else {
-                    ""
-                };
-                let slug = c.status.as_deref().unwrap_or("-");
-                println!("{}  ({})  {}{fin}", c.name, slug, c.id);
-            }
+                .with_action("Failed to list columns")?;
+            print_columns(&columns);
         }
 
         ColumnCommand::Create {
@@ -46,14 +31,16 @@ pub async fn run(
                 name,
                 icon,
                 color,
-                is_final: if is_final { Some(true) } else { None },
+                is_final: is_final.then_some(true),
             };
             let col: Column = client
                 .post(&format!("/column/{pid}"), &body)
                 .await
-                .map_err(|e| crate::errors::api_error("Failed to create column".to_owned(), e))?;
-
-            output::success(&format!("Created column '{}' ({})", col.name, col.id));
+                .with_action("Failed to create column")?;
+            output::success(&format!(
+                "Created column '{}' ({}) ({})",
+                col.name, col.slug, col.id
+            ));
         }
 
         ColumnCommand::Update {
@@ -63,19 +50,7 @@ pub async fn run(
             color,
             is_final,
         } => {
-            #[derive(serde::Serialize)]
-            #[serde(rename_all = "camelCase")]
-            struct UpdateBody {
-                #[serde(skip_serializing_if = "Option::is_none")]
-                name: Option<String>,
-                #[serde(skip_serializing_if = "Option::is_none")]
-                icon: Option<String>,
-                #[serde(skip_serializing_if = "Option::is_none")]
-                color: Option<String>,
-                #[serde(skip_serializing_if = "Option::is_none")]
-                is_final: Option<bool>,
-            }
-            let body = UpdateBody {
+            let body = UpdateColumnBody {
                 name,
                 icon,
                 color,
@@ -84,58 +59,51 @@ pub async fn run(
             let col: Column = client
                 .put(&format!("/column/{id}"), &body)
                 .await
-                .map_err(|e| crate::errors::api_error("Failed to update column".to_owned(), e))?;
-
+                .with_action("Failed to update column")?;
             output::success(&format!("Updated column '{}'", col.name));
         }
 
         ColumnCommand::Delete { id, force } => {
             if !force {
-                eprintln!(
-                    "  {} Re-run with `--force` to confirm deletion",
-                    output::dim("note:")
-                );
+                output::force_required();
                 return Ok(());
             }
             let col: Column = client
                 .delete(&format!("/column/{id}"))
                 .await
-                .map_err(|e| crate::errors::not_found("Column", &id, e))?;
-
+                .with_action("Failed to delete column (it must be empty)")?;
             output::success(&format!("Deleted column '{}'", col.name));
         }
 
         ColumnCommand::Reorder { project_id, order } => {
-            #[derive(serde::Serialize)]
-            struct ReorderBody {
-                columns: Vec<ColumnPos>,
-            }
-            #[derive(serde::Serialize)]
-            struct ColumnPos {
-                id: String,
-                position: i64,
-            }
-
-            let columns: Vec<ColumnPos> = order
-                .iter()
+            let pid = context::require_project(project_id.as_deref(), ctx)?;
+            let columns = order
+                .into_iter()
                 .enumerate()
-                .map(|(i, id)| ColumnPos {
-                    id: id.clone(),
-                    position: i as i64,
-                })
+                .map(|(position, id)| ColumnPosition { id, position })
                 .collect();
-
-            let _result: serde_json::Value = client
+            let reordered: Vec<Column> = client
                 .put(
-                    &format!("/column/reorder/{project_id}"),
-                    &ReorderBody { columns },
+                    &format!("/column/reorder/{pid}"),
+                    &ReorderColumnsBody { columns },
                 )
                 .await
-                .map_err(|e| crate::errors::api_error("Failed to reorder columns".to_owned(), e))?;
-
+                .with_action("Failed to reorder columns")?;
             output::success("Columns reordered");
+            print_columns(&reordered);
         }
     }
 
     Ok(())
+}
+
+fn print_columns(columns: &[Column]) {
+    if columns.is_empty() {
+        output::warn("No columns found");
+        return;
+    }
+    for c in columns {
+        let fin = if c.is_final { " [final]" } else { "" };
+        println!("{}  ({})  {}{fin}", c.name, c.slug, c.id);
+    }
 }

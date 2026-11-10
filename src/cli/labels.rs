@@ -20,8 +20,8 @@ pub enum LabelCommand {
         #[arg(long)]
         workspace_id: Option<String>,
 
-        #[arg(long, default_value = "#6366f1")]
-        color: Option<String>,
+        #[arg(long, default_value = "#6366f1", help = "Hex color")]
+        color: String,
     },
 
     Update {

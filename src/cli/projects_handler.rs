@@ -1,15 +1,13 @@
 use crate::api::client::ApiClient;
-use crate::api::types::{CreateProjectBody, Project, UpdateProjectBody};
-use crate::auth::context;
+use crate::api::types::project::{CreateProjectBody, Project, UpdateProjectBody};
+use crate::auth::context::{self, ResolvedContext};
+use crate::cli::project_admin;
 use crate::cli::projects::ProjectCommand;
+use crate::errors::{ApiResultExt, KaneoError};
 use crate::output;
 
-pub async fn run(
-    cmd: ProjectCommand,
-    ctx: &context::ResolvedContext,
-) -> Result<(), crate::errors::KaneoError> {
-    let client =
-        ApiClient::new(&ctx.instance, &ctx.api_key).map_err(crate::errors::config_error)?;
+pub async fn run(cmd: ProjectCommand, ctx: &ResolvedContext) -> Result<(), KaneoError> {
+    let client = ctx.client()?;
 
     match cmd {
         ProjectCommand::List {
@@ -24,7 +22,7 @@ pub async fn run(
             let projects: Vec<Project> = client
                 .get(&path)
                 .await
-                .map_err(|e| crate::errors::api_error("Failed to list projects".to_owned(), e))?;
+                .with_action("Failed to list projects")?;
 
             if projects.is_empty() {
                 output::warn("No projects found");
@@ -41,33 +39,8 @@ pub async fn run(
         }
 
         ProjectCommand::Get { id } => {
-            let project: Project = client
-                .get(&format!("/project/{id}"))
-                .await
-                .map_err(|e| crate::errors::not_found("Project", &id, e))?;
-
-            println!("{}", project.name);
-            println!("  Slug:        {}", project.slug);
-            println!("  ID:          {}", project.id);
-            println!("  Workspace:   {}", project.workspace_id);
-            if let Some(icon) = &project.icon
-                && !icon.is_empty()
-            {
-                println!("  Icon:        {icon}");
-            }
-            if let Some(desc) = &project.description
-                && !desc.is_empty()
-            {
-                println!("  Description: {desc}");
-            }
-            println!(
-                "  Public:      {}",
-                if project.is_public.unwrap_or(false) {
-                    "yes"
-                } else {
-                    "no"
-                }
-            );
+            let project = fetch(&client, &id).await?;
+            print_project(&project);
         }
 
         ProjectCommand::Create {
@@ -78,19 +51,27 @@ pub async fn run(
             description,
         } => {
             let ws = context::require_workspace(workspace_id.as_deref(), ctx)?;
-            let slug_val = slug.unwrap_or_else(|| slug_from_name(&name));
+            let slug = slug.unwrap_or_else(|| slug_from_name(&name));
             let body = CreateProjectBody {
                 name,
                 workspace_id: ws,
-                slug: slug_val,
-                icon: icon.unwrap_or_default(),
-                description: description.unwrap_or_default(),
+                slug,
+                icon: icon.unwrap_or_else(|| "Layout".to_owned()),
             };
-            let project: Project = client
+            let mut project: Project = client
                 .post("/project", &body)
                 .await
-                .map_err(|e| crate::errors::api_error("Failed to create project".to_owned(), e))?;
+                .with_action("Failed to create project")?;
 
+            // The create endpoint has no description field, so it is set with a follow-up replace.
+            if let Some(description) = description {
+                let id = project.id.clone();
+                let body = UpdateProjectBody {
+                    description,
+                    ..UpdateProjectBody::from_project(project)
+                };
+                project = replace(&client, &body, &id).await?;
+            }
             output::success(&format!(
                 "Created project '{}' ({})",
                 project.name, project.id
@@ -105,62 +86,101 @@ pub async fn run(
             description,
             is_public,
         } => {
-            let current: Project = client
-                .get(&format!("/project/{id}"))
-                .await
-                .map_err(|e| crate::errors::not_found("Project", &id, e))?;
-
+            let current = UpdateProjectBody::from_project(fetch(&client, &id).await?);
             let body = UpdateProjectBody {
                 name: name.unwrap_or(current.name),
-                icon: icon.unwrap_or(current.icon.unwrap_or_default()),
+                icon: icon.unwrap_or(current.icon),
                 slug: slug.unwrap_or(current.slug),
-                description: description.unwrap_or(current.description.unwrap_or_default()),
-                is_public: is_public.unwrap_or(current.is_public.unwrap_or(false)),
+                description: description.unwrap_or(current.description),
+                is_public: is_public.unwrap_or(current.is_public),
             };
-            let project: Project = client
-                .put(&format!("/project/{id}"), &body)
-                .await
-                .map_err(|e| crate::errors::api_error("Failed to update project".to_owned(), e))?;
-
+            let project = replace(&client, &body, &id).await?;
             output::success(&format!("Updated project '{}'", project.name));
         }
 
         ProjectCommand::Delete { id, force } => {
             if !force {
-                eprintln!(
-                    "  {} Re-run with `--force` to confirm deletion",
-                    output::dim("note:")
-                );
+                output::force_required();
                 return Ok(());
             }
             let project: Project = client
                 .delete(&format!("/project/{id}"))
                 .await
-                .map_err(|e| crate::errors::not_found("Project", &id, e))?;
-
+                .with_action("Failed to delete project")?;
             output::success(&format!("Deleted project '{}'", project.name));
         }
 
         ProjectCommand::Archive { id } => {
-            let project: Project = client
-                .put(&format!("/project/{id}/archive"), &serde_json::json!({}))
-                .await
-                .map_err(|e| crate::errors::not_found("Project", &id, e))?;
-
+            let project = toggle_archive(&client, &id, "archive").await?;
             output::success(&format!("Archived project '{}'", project.name));
         }
 
         ProjectCommand::Unarchive { id } => {
-            let project: Project = client
-                .put(&format!("/project/{id}/unarchive"), &serde_json::json!({}))
-                .await
-                .map_err(|e| crate::errors::not_found("Project", &id, e))?;
-
+            let project = toggle_archive(&client, &id, "unarchive").await?;
             output::success(&format!("Unarchived project '{}'", project.name));
+        }
+
+        ProjectCommand::MoveProject { id, to, force } => {
+            project_admin::move_project(&client, &id, to, force).await?;
+        }
+
+        ProjectCommand::Reorder {
+            order,
+            workspace_id,
+        } => {
+            let ws = context::require_workspace(workspace_id.as_deref(), ctx)?;
+            project_admin::reorder(&client, &ws, order).await?;
         }
     }
 
     Ok(())
+}
+
+async fn fetch(client: &ApiClient, id: &str) -> Result<Project, KaneoError> {
+    client
+        .get(&format!("/project/{id}"))
+        .await
+        .with_action("Failed to get project")
+}
+
+async fn replace(
+    client: &ApiClient,
+    body: &UpdateProjectBody,
+    id: &str,
+) -> Result<Project, KaneoError> {
+    client
+        .put(&format!("/project/{id}"), body)
+        .await
+        .with_action("Failed to update project")
+}
+
+async fn toggle_archive(client: &ApiClient, id: &str, action: &str) -> Result<Project, KaneoError> {
+    client
+        .put(&format!("/project/{id}/{action}"), &serde_json::json!({}))
+        .await
+        .with_action(&format!("Failed to {action} project"))
+}
+
+fn print_project(project: &Project) {
+    println!("{}", project.name);
+    println!("  Slug:        {}", project.slug);
+    println!("  ID:          {}", project.id);
+    println!("  Workspace:   {}", project.workspace_id);
+    if let Some(icon) = project.icon.as_deref().filter(|i| !i.is_empty()) {
+        println!("  Icon:        {icon}");
+    }
+    if let Some(desc) = project.description.as_deref().filter(|d| !d.is_empty()) {
+        println!("  Description: {desc}");
+    }
+    let public = if project.is_public.unwrap_or(false) {
+        "yes"
+    } else {
+        "no"
+    };
+    println!("  Public:      {public}");
+    if project.archived_at.is_some() {
+        println!("  Archived:    yes");
+    }
 }
 
 fn slug_from_name(name: &str) -> String {

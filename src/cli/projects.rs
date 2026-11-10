@@ -71,4 +71,33 @@ pub enum ProjectCommand {
         #[arg(help = "Project ID")]
         id: String,
     },
+
+    #[command(
+        name = "move",
+        about = "Move a project and its tasks to another workspace"
+    )]
+    MoveProject {
+        #[arg(help = "Project ID")]
+        id: String,
+
+        #[arg(long = "to", help = "Destination workspace ID")]
+        to: String,
+
+        #[arg(long, help = "Confirm the move")]
+        force: bool,
+    },
+
+    #[command(about = "Set the sidebar order of a workspace's projects")]
+    Reorder {
+        #[arg(
+            long,
+            required = true,
+            value_delimiter = ',',
+            help = "Project IDs in the desired order, comma-separated"
+        )]
+        order: Vec<String>,
+
+        #[arg(long)]
+        workspace_id: Option<String>,
+    },
 }

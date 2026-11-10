@@ -624,7 +624,7 @@ dependencies = [
 
 [[package]]
 name = "kaneo-cli"
-version = "0.1.9"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -632,6 +632,7 @@ dependencies = [
  "console",
  "dirs",
  "flate2",
+ "iana-time-zone",
  "reqwest",
  "serde",
  "serde_json",

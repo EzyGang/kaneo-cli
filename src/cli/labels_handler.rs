@@ -1,15 +1,17 @@
+use std::time::Duration;
+
 use crate::api::client::ApiClient;
-use crate::api::types::{CreateLabelBody, Label};
-use crate::auth::context;
+use crate::api::types::label::{CreateLabelBody, Label, UpdateLabelBody};
+use crate::auth::context::{self, ResolvedContext};
 use crate::cli::labels::LabelCommand;
+use crate::errors::{ApiResultExt, KaneoError};
 use crate::output;
 
-pub async fn run(
-    cmd: LabelCommand,
-    ctx: &context::ResolvedContext,
-) -> Result<(), crate::errors::KaneoError> {
-    let client =
-        ApiClient::new(&ctx.instance, &ctx.api_key).map_err(crate::errors::config_error)?;
+/// Pause between `DELETE` repeats while a large label cascade is still running.
+const DELETE_POLL_INTERVAL: Duration = Duration::from_secs(1);
+
+pub async fn run(cmd: LabelCommand, ctx: &ResolvedContext) -> Result<(), KaneoError> {
+    let client = ctx.client()?;
 
     match cmd {
         LabelCommand::List { workspace_id } => {
@@ -17,8 +19,7 @@ pub async fn run(
             let labels: Vec<Label> = client
                 .get(&format!("/label/workspace/{ws}"))
                 .await
-                .map_err(|e| crate::errors::api_error("Failed to list labels".to_owned(), e))?;
-
+                .with_action("Failed to list labels")?;
             if labels.is_empty() {
                 output::warn("No labels found");
                 return Ok(());
@@ -29,14 +30,10 @@ pub async fn run(
         }
 
         LabelCommand::Get { id } => {
-            let label: Label = client
-                .get(&format!("/label/{id}"))
-                .await
-                .map_err(|e| crate::errors::not_found("Label", &id, e))?;
-
+            let label = fetch(&client, &id).await?;
             println!("{}", label.name);
-            println!("  Color:  {}", label.color);
-            println!("  ID:     {}", label.id);
+            println!("  Color:     {}", label.color);
+            println!("  ID:        {}", label.id);
             if let Some(ws) = &label.workspace_id {
                 println!("  Workspace: {ws}");
             }
@@ -50,51 +47,65 @@ pub async fn run(
             let ws = context::require_workspace(workspace_id.as_deref(), ctx)?;
             let body = CreateLabelBody {
                 name,
-                color: color.unwrap_or_else(|| "#6366f1".to_owned()),
+                color,
                 workspace_id: ws,
                 task_id: None,
             };
             let label: Label = client
                 .post("/label", &body)
                 .await
-                .map_err(|e| crate::errors::api_error("Failed to create label".to_owned(), e))?;
-
+                .with_action("Failed to create label")?;
             output::success(&format!("Created label '{}' ({})", label.name, label.id));
         }
 
         LabelCommand::Update { id, name, color } => {
-            #[derive(serde::Serialize)]
-            struct UpdateBody {
-                #[serde(skip_serializing_if = "Option::is_none")]
-                name: Option<String>,
-                #[serde(skip_serializing_if = "Option::is_none")]
-                color: Option<String>,
-            }
-            let body = UpdateBody { name, color };
+            let current = fetch(&client, &id).await?;
+            let body = UpdateLabelBody {
+                name: name.unwrap_or(current.name),
+                color: color.unwrap_or(current.color),
+            };
             let label: Label = client
                 .put(&format!("/label/{id}"), &body)
                 .await
-                .map_err(|e| crate::errors::api_error("Failed to update label".to_owned(), e))?;
-
+                .with_action("Failed to update label")?;
             output::success(&format!("Updated label '{}'", label.name));
         }
 
         LabelCommand::Delete { id, force } => {
             if !force {
-                eprintln!(
-                    "  {} Re-run with `--force` to confirm deletion",
-                    output::dim("note:")
-                );
+                output::force_required();
                 return Ok(());
             }
-            let label: Label = client
-                .delete(&format!("/label/{id}"))
-                .await
-                .map_err(|e| crate::errors::not_found("Label", &id, e))?;
-
+            let label = delete_until_done(&client, &id).await?;
             output::success(&format!("Deleted label '{}'", label.name));
         }
     }
 
     Ok(())
+}
+
+async fn fetch(client: &ApiClient, id: &str) -> Result<Label, KaneoError> {
+    client
+        .get(&format!("/label/{id}"))
+        .await
+        .with_action("Failed to get label")
+}
+
+/// Repeats `DELETE /label/{id}` while the server reports the cascade as pending.
+async fn delete_until_done(client: &ApiClient, id: &str) -> Result<Label, KaneoError> {
+    let path = format!("/label/{id}");
+    loop {
+        let label: Label = client
+            .delete(&path)
+            .await
+            .with_action("Failed to delete label")?;
+        if !label.pending_deletion {
+            return Ok(label);
+        }
+        output::warn(&format!(
+            "Removing label '{}' from tasks, continuing…",
+            label.name
+        ));
+        tokio::time::sleep(DELETE_POLL_INTERVAL).await;
+    }
 }

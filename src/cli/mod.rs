@@ -1,24 +1,52 @@
-use clap::{Parser, Subcommand, ValueEnum};
-
+pub mod args;
 pub mod columns;
 pub mod columns_handler;
+pub mod duration;
+pub mod field_value;
+pub mod fields;
+pub mod fields_handler;
 pub mod labels;
 pub mod labels_handler;
 pub mod login;
+pub mod notifications;
+pub mod notifications_handler;
+pub mod project_admin;
 pub mod projects;
 pub mod projects_handler;
 pub mod search_handler;
 pub mod set_unset;
+pub mod task_ref;
 pub mod tasks;
-pub mod tasks_handler;
+pub mod time;
+pub mod time_api;
+pub mod time_clock;
+pub mod time_handler;
+pub mod workflows;
+pub mod workflows_handler;
 pub mod workspaces;
 pub mod workspaces_handler;
 
-use columns::ColumnCommand;
-use labels::LabelCommand;
-use projects::ProjectCommand;
-use tasks::TaskCommand;
-use workspaces::WorkspaceCommand;
+#[cfg(test)]
+mod duration_tests;
+#[cfg(test)]
+mod field_value_tests;
+#[cfg(test)]
+mod project_admin_tests;
+#[cfg(test)]
+mod task_ref_tests;
+
+use clap::{Parser, Subcommand};
+
+use crate::cli::args::{InstallSkillArgs, LoginArgs, SearchArgs, SetArgs, UnsetArgs, UpgradeArgs};
+use crate::cli::columns::ColumnCommand;
+use crate::cli::fields::FieldCommand;
+use crate::cli::labels::LabelCommand;
+use crate::cli::notifications::NotificationCommand;
+use crate::cli::projects::ProjectCommand;
+use crate::cli::tasks::command::TaskCommand;
+use crate::cli::time::TimeCommand;
+use crate::cli::workflows::WorkflowCommand;
+use crate::cli::workspaces::WorkspaceCommand;
 
 #[derive(Parser)]
 #[command(
@@ -57,6 +85,9 @@ pub enum Command {
 
     #[command(about = "Remove stored credentials")]
     Logout,
+
+    #[command(about = "Show the authenticated user and instance")]
+    Whoami,
 
     #[command(
         name = "set",
@@ -100,142 +131,59 @@ pub enum Command {
         command: LabelCommand,
     },
 
-    #[command(
-        visible_alias = "ws",
-        about = "List workspaces accessible to your API key"
-    )]
+    #[command(about = "Manage custom fields of a project")]
+    Field {
+        #[command(subcommand)]
+        command: FieldCommand,
+    },
+
+    #[command(about = "Manage workflow rules that move tasks on integration events")]
+    Workflow {
+        #[command(subcommand)]
+        command: WorkflowCommand,
+    },
+
+    #[command(visible_alias = "ws", about = "List and inspect workspaces")]
     Workspace {
         #[command(subcommand)]
         command: WorkspaceCommand,
     },
 
-    #[command(about = "Search across tasks, projects, workspaces, and comments")]
+    #[command(visible_alias = "inbox", about = "Read and manage your notifications")]
+    Notification {
+        #[command(subcommand)]
+        command: NotificationCommand,
+    },
+
+    #[command(about = "Search across tasks, projects, workspaces, comments, and activity")]
     Search(SearchArgs),
+
+    #[command(about = "Track time on tasks")]
+    Time {
+        #[command(subcommand)]
+        command: TimeCommand,
+    },
 
     #[command(about = "Download and install the latest version of kaneo")]
     Upgrade(UpgradeArgs),
 
+    #[command(about = "Print the agent skill (SKILL.md) that explains this CLI")]
+    Skill,
+
     #[command(
         name = "install-skill",
-        about = "Write a SKILL.md file so AI agents know how to invoke this CLI"
+        about = "Install the agent skill into AI agents with the npm `skills` installer",
+        after_help = INSTALL_SKILL_HELP
     )]
     InstallSkill(InstallSkillArgs),
 }
 
-#[derive(Parser, Clone)]
-pub struct LoginArgs {
-    #[arg(help = "Your Kaneo API key (find it in Settings → API)")]
-    pub api_key: String,
+const INSTALL_SKILL_HELP: &str = "\
+Examples:
+  kaneo install-skill                          asks for the agents and the scope
+  kaneo install-skill -g -a claude-code -y     Claude Code, for this user
+  kaneo install-skill -a '*' -y                every agent, in this project
+  kaneo install-skill --runner bun             use bun instead of npx/pnpm
 
-    #[arg(
-        long,
-        default_value = "cloud.kaneo.app",
-        help = "Hostname of the Kaneo instance (e.g. kaneo.example.com)"
-    )]
-    pub instance: String,
-}
-
-#[derive(Parser, Clone)]
-pub struct SetArgs {
-    #[arg(long, help = "Project ID to pin")]
-    pub project: Option<String>,
-
-    #[arg(long, help = "Write to global config instead of the current directory")]
-    pub global: bool,
-}
-
-#[derive(Parser, Clone)]
-pub struct UnsetArgs {
-    #[arg(long, help = "Remove only the workspace pin")]
-    pub workspace: bool,
-
-    #[arg(long, help = "Remove only the project pin")]
-    pub project: bool,
-
-    #[arg(
-        long,
-        help = "Remove from global config instead of the current directory"
-    )]
-    pub global: bool,
-}
-
-#[derive(Parser, Clone)]
-pub struct SearchArgs {
-    #[arg(help = "Search query string")]
-    pub query: String,
-
-    #[arg(long, value_enum, default_value_t = SearchType::All, help = "Limit search to a resource type")]
-    pub r#type: SearchType,
-
-    #[arg(long, help = "Restrict search to a project")]
-    pub project_id: Option<String>,
-
-    #[arg(long, default_value = "10", help = "Maximum number of results")]
-    pub limit: u32,
-}
-
-#[derive(ValueEnum, Clone)]
-pub enum SearchType {
-    #[value(help = "Everything")]
-    All,
-    #[value(help = "Only tasks")]
-    Tasks,
-    #[value(help = "Only projects")]
-    Projects,
-    #[value(help = "Only workspaces")]
-    Workspaces,
-    #[value(help = "Only comments")]
-    Comments,
-}
-
-impl SearchType {
-    pub fn as_api_str(&self) -> &str {
-        match self {
-            Self::All => "all",
-            Self::Tasks => "tasks",
-            Self::Projects => "projects",
-            Self::Workspaces => "workspaces",
-            Self::Comments => "comments",
-        }
-    }
-}
-
-#[derive(Parser, Clone)]
-pub struct UpgradeArgs {
-    #[arg(long, help = "Reinstall even if already on the latest version")]
-    pub force: bool,
-
-    #[arg(long, help = "Install a specific version (e.g. v0.2.0)")]
-    pub version: Option<String>,
-}
-
-#[derive(Parser, Clone)]
-pub struct InstallSkillArgs {
-    #[arg(long, value_enum, help = "Which agent to install the skill for")]
-    pub agent: InstallSkillAgent,
-
-    #[arg(
-        long,
-        value_enum,
-        help = "Install globally or in the current directory"
-    )]
-    pub scope: InstallSkillScope,
-}
-
-#[derive(ValueEnum, Clone, Copy, PartialEq, Eq)]
-pub enum InstallSkillAgent {
-    #[value(help = "Opencode / Codex CLI")]
-    Opencode,
-    #[value(help = "Claude Code")]
-    Claude,
-    #[value(help = "OpenAI Codex CLI (same paths as opencode)")]
-    Codex,
-}
-
-#[derive(ValueEnum, Clone, Copy, PartialEq, Eq)]
-pub enum InstallSkillScope {
-    #[value(help = "Install globally (~/.config/...)")]
-    Global,
-    #[value(help = "Install in the current directory")]
-    Local,
-}
+Without Node.js or bun, save the skill yourself:
+  mkdir -p ~/.agents/skills/kaneo && kaneo skill > ~/.agents/skills/kaneo/SKILL.md";

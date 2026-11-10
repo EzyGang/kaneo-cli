@@ -1,8 +1,19 @@
+use std::time::Duration;
+
 use anyhow::Context;
-use reqwest::header::{AUTHORIZATION, HeaderMap, HeaderValue};
+use reqwest::header::{AUTHORIZATION, HeaderMap, HeaderValue, RETRY_AFTER};
+use reqwest::{Method, Response, StatusCode};
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 
+use crate::api::error::{ApiError, ErrorBody};
+
+/// Requests sent to a rate-limited API key before the error reaches the user.
+const MAX_ATTEMPTS: u32 = 3;
+/// Longest `Retry-After` the client waits for instead of failing; the server's window is a minute.
+const MAX_RETRY_WAIT: Duration = Duration::from_secs(60);
+
+/// An authenticated HTTP client for the Kaneo REST API.
 pub struct ApiClient {
     client: reqwest::Client,
     base_url: String,
@@ -28,131 +39,152 @@ impl ApiClient {
         Ok(Self { client, base_url })
     }
 
-    fn url(&self, path: &str) -> String {
-        format!("{}{path}", self.base_url)
+    pub async fn get<T>(&self, path: &str) -> Result<T, ApiError>
+    where
+        T: DeserializeOwned,
+    {
+        self.send(Method::GET, path, None::<&()>, None::<&()>).await
     }
 
-    pub async fn get<T: DeserializeOwned>(&self, path: &str) -> anyhow::Result<T> {
-        let url = self.url(path);
-        let resp = self
-            .client
-            .get(&url)
-            .send()
+    pub async fn get_query<T, Q>(&self, path: &str, query: &Q) -> Result<T, ApiError>
+    where
+        T: DeserializeOwned,
+        Q: Serialize,
+    {
+        self.send(Method::GET, path, Some(query), None::<&()>).await
+    }
+
+    pub async fn post<B, T>(&self, path: &str, body: &B) -> Result<T, ApiError>
+    where
+        B: Serialize,
+        T: DeserializeOwned,
+    {
+        self.send(Method::POST, path, None::<&()>, Some(body)).await
+    }
+
+    pub async fn put<B, T>(&self, path: &str, body: &B) -> Result<T, ApiError>
+    where
+        B: Serialize,
+        T: DeserializeOwned,
+    {
+        self.send(Method::PUT, path, None::<&()>, Some(body)).await
+    }
+
+    pub async fn put_query<B, T, Q>(&self, path: &str, query: &Q, body: &B) -> Result<T, ApiError>
+    where
+        B: Serialize,
+        T: DeserializeOwned,
+        Q: Serialize,
+    {
+        self.send(Method::PUT, path, Some(query), Some(body)).await
+    }
+
+    pub async fn patch<B, T>(&self, path: &str, body: &B) -> Result<T, ApiError>
+    where
+        B: Serialize,
+        T: DeserializeOwned,
+    {
+        self.send(Method::PATCH, path, None::<&()>, Some(body))
             .await
-            .with_context(|| format!("GET {url}"))?;
-
-        handle_response(resp, "GET", &url).await
     }
 
-    pub async fn get_query<T: DeserializeOwned, Q: Serialize>(
+    pub async fn delete<T>(&self, path: &str) -> Result<T, ApiError>
+    where
+        T: DeserializeOwned,
+    {
+        self.send(Method::DELETE, path, None::<&()>, None::<&()>)
+            .await
+    }
+
+    /// Sends one request, retrying while the API key is rate limited.
+    async fn send<T, Q, B>(
         &self,
+        method: Method,
         path: &str,
-        query: &Q,
-    ) -> anyhow::Result<T> {
-        let url = self.url(path);
-        let resp = self
-            .client
-            .get(&url)
-            .query(query)
-            .send()
-            .await
-            .with_context(|| format!("GET {url}"))?;
+        query: Option<&Q>,
+        body: Option<&B>,
+    ) -> Result<T, ApiError>
+    where
+        T: DeserializeOwned,
+        Q: Serialize,
+        B: Serialize,
+    {
+        let url = format!("{}{path}", self.base_url);
+        let mut attempt = 1;
+        loop {
+            let mut request = self.client.request(method.clone(), &url);
+            if let Some(query) = query {
+                request = request.query(query);
+            }
+            if let Some(body) = body {
+                request = request.json(body);
+            }
+            let response = request.send().await.map_err(|source| ApiError::Transport {
+                url: url.clone(),
+                source,
+            })?;
 
-        handle_response(resp, "GET", &url).await
-    }
-
-    pub async fn post<B: Serialize, T: DeserializeOwned>(
-        &self,
-        path: &str,
-        body: &B,
-    ) -> anyhow::Result<T> {
-        let url = self.url(path);
-        let resp = self
-            .client
-            .post(&url)
-            .json(body)
-            .send()
-            .await
-            .with_context(|| format!("POST {url}"))?;
-
-        handle_response(resp, "POST", &url).await
-    }
-
-    pub async fn put<B: Serialize, T: DeserializeOwned>(
-        &self,
-        path: &str,
-        body: &B,
-    ) -> anyhow::Result<T> {
-        let url = self.url(path);
-        let resp = self
-            .client
-            .put(&url)
-            .json(body)
-            .send()
-            .await
-            .with_context(|| format!("PUT {url}"))?;
-
-        handle_response(resp, "PUT", &url).await
-    }
-
-    pub async fn delete<T: DeserializeOwned>(&self, path: &str) -> anyhow::Result<T> {
-        let url = self.url(path);
-        let resp = self
-            .client
-            .delete(&url)
-            .send()
-            .await
-            .with_context(|| format!("DELETE {url}"))?;
-
-        handle_response(resp, "DELETE", &url).await
-    }
-
-    #[allow(dead_code)]
-    pub async fn delete_json<B: Serialize, T: DeserializeOwned>(
-        &self,
-        path: &str,
-        body: &B,
-    ) -> anyhow::Result<T> {
-        let url = self.url(path);
-        let resp = self
-            .client
-            .delete(&url)
-            .json(body)
-            .send()
-            .await
-            .with_context(|| format!("DELETE {url}"))?;
-
-        handle_response(resp, "DELETE", &url).await
+            match retry_delay(&response) {
+                Some(wait) if attempt < MAX_ATTEMPTS => {
+                    crate::output::warn(&format!(
+                        "Rate limited by the server, retrying in {}s",
+                        wait.as_secs()
+                    ));
+                    tokio::time::sleep(wait).await;
+                    attempt += 1;
+                }
+                _ => return decode(response, &url).await,
+            }
+        }
     }
 }
 
-async fn handle_response<T: DeserializeOwned>(
-    resp: reqwest::Response,
-    method: &str,
-    url: &str,
-) -> anyhow::Result<T> {
-    let status = resp.status();
-
-    if !status.is_success() {
-        let body = resp
-            .text()
-            .await
-            .unwrap_or_else(|_| "<unreadable body>".into());
-
-        if let Ok(val) = serde_json::from_str::<serde_json::Value>(&body)
-            && let Some(msg) = val.get("message").and_then(|m| m.as_str())
-        {
-            anyhow::bail!("{status}: {msg}");
-        }
-
-        anyhow::bail!("{status}: {body}");
+/// Returns how long to wait before retrying a rate-limited response.
+///
+/// A missing `Retry-After` means the usage quota never refills, so the request is not retried.
+fn retry_delay(response: &Response) -> Option<Duration> {
+    if response.status() != StatusCode::TOO_MANY_REQUESTS {
+        return None;
     }
+    let seconds: u64 = response
+        .headers()
+        .get(RETRY_AFTER)?
+        .to_str()
+        .ok()?
+        .trim()
+        .parse()
+        .ok()?;
+    let wait = Duration::from_secs(seconds.max(1));
+    (wait <= MAX_RETRY_WAIT).then_some(wait)
+}
 
-    let body = resp
+async fn decode<T>(response: Response, url: &str) -> Result<T, ApiError>
+where
+    T: DeserializeOwned,
+{
+    let status = response.status();
+    let text = response
         .text()
         .await
-        .with_context(|| format!("reading response body from {method} {url}"))?;
+        .map_err(|source| ApiError::Transport {
+            url: url.to_owned(),
+            source,
+        })?;
 
-    serde_json::from_str::<T>(&body)
-        .with_context(|| format!("failed to parse response from {method} {url}"))
+    if !status.is_success() {
+        return Err(ApiError::Status {
+            status,
+            body: ErrorBody::parse(status, &text),
+        });
+    }
+
+    let text = if text.trim().is_empty() {
+        "null"
+    } else {
+        &text
+    };
+    serde_json::from_str(text).map_err(|source| ApiError::Decode {
+        url: url.to_owned(),
+        source,
+    })
 }

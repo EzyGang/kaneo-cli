@@ -51,11 +51,16 @@ pub enum ColumnCommand {
         force: bool,
     },
 
+    #[command(about = "Set the column order of a project's board")]
     Reorder {
         #[arg(long)]
-        project_id: String,
+        project_id: Option<String>,
 
-        #[arg(long, value_delimiter = ',')]
+        #[arg(
+            long,
+            value_delimiter = ',',
+            help = "Comma-separated column IDs in the desired order"
+        )]
         order: Vec<String>,
     },
 }
